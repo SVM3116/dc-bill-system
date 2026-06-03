@@ -38,7 +38,7 @@ export default function AuthLayout({
         <p>
           Developed by{" "}
           <Link href="/developer" className="font-bold text-blue-600 hover:text-blue-800 hover:underline">
-            Manoj Kumar V (Proud Alumnus)
+            Manoj Kumar V
           </Link>
         </p>
         <p>Morarji Desai Residential School, Malur Town, Malur Taluk, Kolar District - 563130</p>

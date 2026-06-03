@@ -33,9 +33,6 @@ export default function DeveloperPage() {
       {/* Main Profile Card */}
       <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
         <div className="h-32 bg-gradient-to-r from-blue-700 via-indigo-800 to-slate-900 relative">
-          <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full border border-white/20 font-semibold tracking-wider uppercase">
-            Proud Alumnus
-          </div>
         </div>
         
         <div className="px-6 pb-6 relative">

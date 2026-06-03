@@ -102,5 +102,5 @@ The application is deployed on Vercel and can be accessed at:
 ---
 
 ## 👥 Authors & Credits
-- **Developer**: [Manoj Kumar V](https://github.com/SVM3116) (Proud Alumnus of Morarji Desai Residential School).
+- **Developer**: [Manoj Kumar V](https://github.com/SVM3116)
 - Official Site: Morarji Desai Residential School, Malur Town, Malur Taluk, Kolar District - 563130.
