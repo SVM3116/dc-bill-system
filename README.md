@@ -2,6 +2,8 @@
 
 A secure, responsive, and automated administrative platform custom-built for **Morarji Desai Residential School, Malur** to manage, track, and programmatically compile **Detailed Contingency (DC) Bills** onto pre-printed official government layouts.
 
+🔗 **Live Deployment Link**: [https://mdrs-malur-dc-bill-system.vercel.app](https://mdrs-malur-dc-bill-system.vercel.app/)
+
 ---
 
 ## 🌟 Key Features
@@ -85,6 +87,10 @@ npm run build
 
 ## ☁️ Deployment on Vercel
 
+The application is deployed on Vercel and can be accessed at:
+👉 **[https://mdrs-malur-dc-bill-system.vercel.app](https://mdrs-malur-dc-bill-system.vercel.app/)**
+
+### Deploying Your Own Instance:
 1. Push this repository to your GitHub account.
 2. Go to [Vercel](https://vercel.com) and click **Add New Project**.
 3. Import your `mdrs-malur-dc-bill-system` repository.
