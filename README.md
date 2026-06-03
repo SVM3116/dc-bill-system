@@ -1,84 +1,82 @@
-# DC Bill Automation System
+# 🏛️ MDRS Malur - DC Bill Automation System
+
+[![Next.js](https://img.shields.io/badge/Next.js-16.2.7-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database-15c38b?style=for-the-badge&logo=supabase)](https://supabase.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38bdf8?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel)](https://mdrs-malur-dc-bill-system.vercel.app/)
 
 A secure, responsive, and automated administrative platform custom-built for **Morarji Desai Residential School, Malur** to manage, track, and programmatically compile **Detailed Contingency (DC) Bills** onto pre-printed official government layouts.
 
-🔗 **Live Deployment Link**: [https://mdrs-malur-dc-bill-system.vercel.app](https://mdrs-malur-dc-bill-system.vercel.app/)
+🔗 **Production Site URL**: [https://mdrs-malur-dc-bill-system.vercel.app](https://mdrs-malur-dc-bill-system.vercel.app/)
 
 ---
 
-## 🌟 Key Features
+## 🌟 Key Modules & Feature Highlights
 
-### 1. Automated DC Bill Number Sequencer
-- Automatically computes the next sequential DC Bill Number based on the active financial year (e.g., `01 / 2026-27`, `02 / 2026-27`), zero-padded to two digits.
-- Handles custom spacing and formats gracefully to prevent numbering collisions.
+### 📋 1. Contingency Bills Management
+* **Smart Bill Number Sequencer**: Automatically computes the next sequential DC Bill Number based on the active academic year context (e.g., `01 / 2026-27`), zero-padded to two digits.
+* **Cheque Constraint & Validation**: Strict 6-digit cheque number verification with **real-time Supabase uniqueness queries** to prevent duplicate database entries on active sessions.
+* **One-Click Duplication**: Duplicate any existing bill's payee info and line items with automatic sequential numbering in a single click.
+* **On-Type Live Filtering**: Debounced search bar (350ms) filters contingency records instantly by sequence numbers (e.g. searching `2` matches `02` but ignores the `2026` year suffix).
 
-### 2. Multi-Page Programmatic PDF Engine
-- Generates official contingency sheets using custom coordinate vector mapping (`pdf-lib`) to print text precisely on pre-printed government templates.
-- **Smart Dynamic Pagination**: Fits 8–10 rows on the first page alongside school metadata, wraps longer particulars, and spans seamlessly across multiple pages.
-- **Dynamic Signature Blocks**: Renders authorization blocks (Principal and District Officer) exactly 50 pt below the last row on the final page instead of static bottom alignment.
+### 🏷️ 2. Dynamic Deductions System (ಕಡಿತಗಳು)
+* **Unlimited Custom Rows**: Support for creating arbitrary deduction line items (e.g., TDS, GST, retention fees, security deposits).
+* **Dual Calculation Modes**: Define deductions as percentages or fixed rupee values with real-time browser recalculation.
+* **Auto-Translation Engine**: Automatically translates the calculated **Net Payable Amount** (instead of the Gross Total) into professional English wording.
 
-### 3. Dual-Language Kannada & English Support
-- Supports rendering of Kannada Unicode text using embedded fonts (`NudiUni01e.ttf`, `NUDI01.TTF`, `NotoSansKannada-Regular.ttf`).
-- Uses custom text scaling multipliers (1.4x) and a synthetic text bolding algorithm (combining fill & stroke) to make Kannada glyphs legible and match standard English lettering.
+### 📄 3. Programmatic PDF Generation Engine
+* **Vector Layout Rendering**: Generates official contingency layouts from scratch using coordinate mapping, lines, and borders via `pdf-lib`.
+* **Multi-Page Pagination Grid**: Handles items dynamically—fits 8–10 rows on the first page, wraps long descriptions, and appends overflow details across subsequent pages.
+* **Signatures & Alignment**: Draws the Principal and District Officer approval fields dynamically 50 pt below the last content row, avoiding visual overlaps.
+* **Kannada Unicode Support**: Native rendering of Kannada scripts (`NudiUni01e.ttf`) using custom scale multiplier logic (1.4x) and a synthetic bolding algorithm.
 
-### 4. Interactive Bill Form & Overlay Bug Fixes
-- Supports editing items on both desktop grid tables and responsive mobile item cards.
-- Viewport-conditional rendering prevents DOM registration collisions.
-- Features dynamic recalculation of total amounts and live validation.
+### 🛡️ 4. Delete Confirmation Flow
+* **Sequence-Only Modal Verification**: Toggling deletion opens an interactive `@base-ui/react` dialog requiring the user to confirm by entering only the sequence bill number (e.g., `02` or `2`).
+* **Active-States Color Coding**: The confirmation button displays with a subtle light-red warning color (`bg-red-50 text-red-600`) when the input mismatch occurs and changes to a solid dark-red state (`bg-red-600 text-white`) when the code matches.
 
-### 5. Cheque Number Constraints
-- Implements strict validation of 6-digit numeric cheque numbers (`z.string().regex(/^\d{6}$/)`).
-- Runs **real-time database uniqueness checks** via Supabase to flag duplicate cheque numbers and block draft saves.
-
-### 6. Bill Duplication & Advanced Live Search
-- **Duplication**: One-click duplication clones all metadata, payee, and item rows into a new bill form while pre-generating the next sequential bill number.
-- **On-Type Search**: Features debounced (350ms) search filtering that instantly scopes items by active sequential number, bypassing year matches.
-- **Financial Year Scope**: Instantly scopes entire platform stats, records, and listings to a selected academic year (from `2024-25` to `2027-28`).
-
-### 7. Modern Responsive Design
-- Frosted-glass animated sidebar navigation drawer for mobile and tablet devices.
-- Grid inputs scale from 1-column on mobile to 3-column on desktop screen widths.
-- Clean typography and premium CSS glassmorphism effects.
+### ⚡ 5. Database Performance & Integrations
+* **Secure Server Actions (RLS Fix)**: Relocated database inserts, updates, and deletes from client-side calls to Server Actions. This secures transaction sequences and ensures cookie-based authorization headers are sent directly, preventing Supabase RLS policy failures.
+* **Database Keep-Alive Cron**: Set up Vercel-scheduled keep-alive pings (`/api/cron`) triggered every 3 days to keep the free-tier Supabase database hot and prevent auto-pausing.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack & Architecture
 
-- **Framework**: [Next.js](https://nextjs.org/) (App Router, TypeScript, Tailwind CSS, Turbopack)
-- **Database**: [Supabase](https://supabase.com/) (PostgreSQL with custom Row-Level Security)
-- **PDF Generation**: [pdf-lib](https://pdf-lib.js.org/) (Custom programmatic vector drawing & Font embedding)
-- **Form Management**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/) (Validation schema validation)
-- **UI Components**: [Shadcn UI](https://ui.shadcn.com/) (Sonner, Dialog, Table, Cards)
+* **Frontend**: Next.js 16 (App Router, Turbopack, React 19)
+* **Styling**: Tailwind CSS v4, Vanilla CSS
+* **Database & Auth**: Supabase (PostgreSQL with Row-Level Security)
+* **PDF Utility**: `pdf-lib` & Fontkit (Custom glyph vector drawing)
+* **Forms & Validation**: React Hook Form, Zod Resolver
+* **Interactions**: Base UI React (`@base-ui/react`), Lucide React Icons
 
 ---
 
-## 🚀 Getting Started
+## 💻 Local Setup & Development
 
 ### 1. Prerequisites
-Ensure you have [Node.js](https://nodejs.org/) installed (v18.0.0 or higher is recommended).
+* [Node.js](https://nodejs.org/) (v18.0.0 or higher is recommended)
+* A [Supabase](https://supabase.com) Project instance
 
-### 2. Environment Setup
-Create a `.env.local` file in the root directory and configure your Supabase variables:
+### 2. Configure Environment
+Create a `.env.local` file in the root directory:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
 ```
 
-### 3. Installation
-Install the project dependencies:
+### 3. Local Installation & Run
 ```bash
+# Install dependencies
 npm install
-```
 
-### 4. Running Locally
-Run the Next.js development server:
-```bash
+# Start the local development server
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
+Open [http://localhost:3000](http://localhost:3000) to view the portal locally.
 
-### 5. Production Build
-Compile the project for production:
+### 4. Build Compilation
+To check type-safety and build static pages:
 ```bash
 npm run build
 ```
@@ -87,20 +85,19 @@ npm run build
 
 ## ☁️ Deployment on Vercel
 
-The application is deployed on Vercel and can be accessed at:
-👉 **[https://mdrs-malur-dc-bill-system.vercel.app](https://mdrs-malur-dc-bill-system.vercel.app/)**
+This app is optimized for seamless deployment on Vercel:
 
-### Deploying Your Own Instance:
-1. Push this repository to your GitHub account.
-2. Go to [Vercel](https://vercel.com) and click **Add New Project**.
-3. Import your `mdrs-malur-dc-bill-system` repository.
-4. Expand the **Environment Variables** section and configure:
+1. Import this repository into your Vercel Account.
+2. In Project Settings, configure the Environment Variables:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-5. Click **Deploy**. Vercel will automatically build and publish your project!
+3. Click **Deploy**. Vercel will build and assign your production domain.
+4. Custom Cron schedules configured in `vercel.json` will automatically map to the project logs.
 
 ---
 
-## 👥 Authors & Credits
-- **Developer**: [Manoj Kumar V](https://github.com/SVM3116)
-- Official Site: Morarji Desai Residential School, Malur Town, Malur Taluk, Kolar District - 563130.
+## 👨‍💻 Developer & School Profile
+
+* **Project Developer**: **Manoj Kumar V** ([GitHub Profile](https://github.com/SVM3116))
+* **School Context**: Morarji Desai Residential School ( Sulibele ) & Morarji PU College ( Hosakote )
+* **Administrative Branch**: Morarji Desai Residential School, Malur Town, Malur Taluk, Kolar District - 563130.
