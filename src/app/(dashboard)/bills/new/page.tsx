@@ -19,7 +19,7 @@ export default async function NewBillPage({ searchParams }: NewBillPageProps) {
     const supabase = await createClient();
     const { data } = await supabase
       .from("dc_bills")
-      .select("*")
+      .select("*, dc_bill_deductions(*)")
       .eq("id", duplicateFrom)
       .single();
 
@@ -32,6 +32,12 @@ export default async function NewBillPage({ searchParams }: NewBillPageProps) {
         payee_address: data.payee_address,
         amount_in_words: data.amount_in_words,
         items: data.items,
+        deductions: data.dc_bill_deductions ? data.dc_bill_deductions.map((d: any) => ({
+          deduction_type: d.deduction_type,
+          deduction_mode: d.deduction_mode,
+          deduction_value: Number(d.deduction_value) || 0,
+          deduction_amount: Number(d.deduction_amount) || 0,
+        })) : [],
       };
     }
   }

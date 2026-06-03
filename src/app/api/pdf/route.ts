@@ -374,7 +374,7 @@ export async function GET(request: NextRequest) {
     // Fetch bill details from database
     const { data: bill, error } = await supabase
       .from("dc_bills")
-      .select("*")
+      .select("*, dc_bill_deductions(*)")
       .eq("id", id)
       .single();
 
@@ -438,11 +438,17 @@ export async function GET(request: NextRequest) {
       return (isBillLong || isParticularsLong) ? 36 : 22;
     });
 
+    const deductions = (bill.dc_bill_deductions as any[]) || [];
+    const deductionsHeightOffset = deductions.length > 0 ? 20 * (deductions.length + 2) : 0;
+
     // Vertical height budgets for layout partitions (Y starts at 841.89 top down)
-    const singlePageRowLimit = 284;
+    const baseSinglePageRowLimit = 284;
     const firstPageRowLimit = 396;
     const middlePageRowLimit = 706;
-    const lastPageRowLimit = 594;
+    const baseLastPageRowLimit = 594;
+
+    const singlePageRowLimit = baseSinglePageRowLimit - deductionsHeightOffset;
+    const lastPageRowLimit = baseLastPageRowLimit - deductionsHeightOffset;
 
     const pagesData: { items: any[]; heights: number[]; startIdx: number }[] = [];
     
@@ -884,41 +890,172 @@ export async function GET(request: NextRequest) {
 
       // Draw Last Page Footer items (Totals, Words, Signatures)
       if (isLastPage) {
-        const totalRowBottom = currentY - 22;
+        const deductions = (bill.dc_bill_deductions as any[]) || [];
+        let finalTableBottomY = currentY;
 
-        // Total row bottom border line
-        page.drawLine({ start: { x: 51.1, y: totalRowBottom }, end: { x: 539.9, y: totalRowBottom }, thickness: 1.0, color: rgb(0, 0, 0) });
+        if (deductions.length > 0) {
+          // 1. Draw Gross Total Row
+          const grossRowBottom = currentY - 20;
+          page.drawLine({ start: { x: 51.1, y: grossRowBottom }, end: { x: 539.9, y: grossRowBottom }, thickness: 0.5, color: rgb(0, 0, 0) });
+          
+          tableColX.forEach((colX) => {
+            page.drawLine({ start: { x: colX, y: currentY }, end: { x: colX, y: grossRowBottom }, thickness: 0.5, color: rgb(0, 0, 0) });
+          });
 
-        // Draw vertical columns inside total row
-        tableColX.forEach((colX) => {
-          page.drawLine({ start: { x: colX, y: currentY }, end: { x: colX, y: totalRowBottom }, thickness: 0.5, color: rgb(0, 0, 0) });
-        });
+          const grossLabel = "ಒಟ್ಟು ಮೊತ್ತ (Gross Total):";
+          const grossLabelWidth = getTextWidth(grossLabel, 10.5, customFont, latinBoldFont);
+          drawMixedText(page, grossLabel, {
+            x: 400 - grossLabelWidth,
+            y: grossRowBottom + 5,
+            size: 10.5,
+            kannadaFont: customFont,
+            latinFont: latinBoldFont,
+            color: rgb(0, 0, 0),
+          });
 
-        // "ಒಟ್ಟು ಮೊತ್ತ:" (Total Amount Kannada label)
-        const totalLabel = "ಒಟ್ಟು ಮೊತ್ತ:";
-        const totalLabelWidth = getTextWidth(totalLabel, 11, customFont, latinBoldFont);
-        drawMixedText(page, totalLabel, {
-          x: 400 - totalLabelWidth,
-          y: totalRowBottom + 6,
-          size: 11,
-          kannadaFont: customFont,
-          latinFont: latinBoldFont,
-          color: rgb(0, 0, 0),
-        });
+          const formattedGross = Number(bill.gross_amount || bill.amount).toFixed(2);
+          const grossValWidth = latinBoldFont.widthOfTextAtSize(formattedGross, 10.5);
+          page.drawText(formattedGross, {
+            x: 534 - grossValWidth,
+            y: grossRowBottom + 5,
+            size: 10.5,
+            font: latinBoldFont,
+            color: rgb(0, 0, 0),
+          });
 
-        // Total Amount Value
-        const formattedTotalAmount = Number(bill.amount).toFixed(2);
-        const totalValWidth = latinBoldFont.widthOfTextAtSize(formattedTotalAmount, 11);
-        page.drawText(formattedTotalAmount, {
-          x: 534 - totalValWidth,
-          y: totalRowBottom + 6,
-          size: 11,
-          font: latinBoldFont,
-          color: rgb(0, 0, 0),
-        });
+          currentY = grossRowBottom;
+
+          // 2. Draw each deduction row
+          deductions.forEach((ded) => {
+            const dedRowBottom = currentY - 20;
+            page.drawLine({ start: { x: 51.1, y: dedRowBottom }, end: { x: 539.9, y: dedRowBottom }, thickness: 0.5, color: rgb(0, 0, 0) });
+            
+            tableColX.forEach((colX) => {
+              page.drawLine({ start: { x: colX, y: currentY }, end: { x: colX, y: dedRowBottom }, thickness: 0.5, color: rgb(0, 0, 0) });
+            });
+
+            const modeStr = ded.deduction_mode === "percentage" ? ` @${ded.deduction_value}%` : "";
+            const dedLabel = `${ded.deduction_type}${modeStr}:`;
+            
+            // Draw in column 3 (particulars)
+            drawMixedText(page, dedLabel, {
+              x: 198,
+              y: dedRowBottom + 5,
+              size: 10,
+              kannadaFont: customFont,
+              latinFont: latinFont,
+              color: rgb(0.1, 0.1, 0.1),
+            });
+
+            const formattedDedAmt = "-" + Number(ded.deduction_amount).toFixed(2);
+            const dedValWidth = latinFont.widthOfTextAtSize(formattedDedAmt, 10);
+            page.drawText(formattedDedAmt, {
+              x: 534 - dedValWidth,
+              y: dedRowBottom + 5,
+              size: 10,
+              font: latinFont,
+              color: rgb(0.1, 0.1, 0.1),
+            });
+
+            currentY = dedRowBottom;
+          });
+
+          // 3. Draw Total Deductions Row
+          const totDedRowBottom = currentY - 20;
+          page.drawLine({ start: { x: 51.1, y: totDedRowBottom }, end: { x: 539.9, y: totDedRowBottom }, thickness: 0.5, color: rgb(0, 0, 0) });
+          
+          tableColX.forEach((colX) => {
+            page.drawLine({ start: { x: colX, y: currentY }, end: { x: colX, y: totDedRowBottom }, thickness: 0.5, color: rgb(0, 0, 0) });
+          });
+
+          const totDedLabel = "ಒಟ್ಟು ಕಡಿತಗಳು (Deductions):";
+          const totDedLabelWidth = getTextWidth(totDedLabel, 10.5, customFont, latinBoldFont);
+          drawMixedText(page, totDedLabel, {
+            x: 400 - totDedLabelWidth,
+            y: totDedRowBottom + 5,
+            size: 10.5,
+            kannadaFont: customFont,
+            latinFont: latinBoldFont,
+            color: rgb(0, 0, 0),
+          });
+
+          const formattedTotDed = "-" + Number(bill.total_deductions || 0).toFixed(2);
+          const totDedValWidth = latinBoldFont.widthOfTextAtSize(formattedTotDed, 10.5);
+          page.drawText(formattedTotDed, {
+            x: 534 - totDedValWidth,
+            y: totDedRowBottom + 5,
+            size: 10.5,
+            font: latinBoldFont,
+            color: rgb(0, 0, 0),
+          });
+
+          currentY = totDedRowBottom;
+
+          // 4. Draw Net Payable Row (double-weight line at bottom)
+          const netRowBottom = currentY - 22;
+          page.drawLine({ start: { x: 51.1, y: netRowBottom }, end: { x: 539.9, y: netRowBottom }, thickness: 1.0, color: rgb(0, 0, 0) });
+          
+          tableColX.forEach((colX) => {
+            page.drawLine({ start: { x: colX, y: currentY }, end: { x: colX, y: netRowBottom }, thickness: 0.5, color: rgb(0, 0, 0) });
+          });
+
+          const netLabel = "ನಿವ್ವಳ ಪಾವತಿ (Net Payable):";
+          const netLabelWidth = getTextWidth(netLabel, 11, customFont, latinBoldFont);
+          drawMixedText(page, netLabel, {
+            x: 400 - netLabelWidth,
+            y: netRowBottom + 6,
+            size: 11,
+            kannadaFont: customFont,
+            latinFont: latinBoldFont,
+            color: rgb(0, 0, 0),
+          });
+
+          const formattedNet = Number(bill.net_payable_amount || bill.amount).toFixed(2);
+          const netValWidth = latinBoldFont.widthOfTextAtSize(formattedNet, 11);
+          page.drawText(formattedNet, {
+            x: 534 - netValWidth,
+            y: netRowBottom + 6,
+            size: 11,
+            font: latinBoldFont,
+            color: rgb(0, 0, 0),
+          });
+
+          finalTableBottomY = netRowBottom;
+        } else {
+          // Original Simple Total Row (No deductions)
+          const totalRowBottom = currentY - 22;
+          page.drawLine({ start: { x: 51.1, y: totalRowBottom }, end: { x: 539.9, y: totalRowBottom }, thickness: 1.0, color: rgb(0, 0, 0) });
+          
+          tableColX.forEach((colX) => {
+            page.drawLine({ start: { x: colX, y: currentY }, end: { x: colX, y: totalRowBottom }, thickness: 0.5, color: rgb(0, 0, 0) });
+          });
+
+          const totalLabel = "ಒಟ್ಟು ಮೊತ್ತ:";
+          const totalLabelWidth = getTextWidth(totalLabel, 11, customFont, latinBoldFont);
+          drawMixedText(page, totalLabel, {
+            x: 400 - totalLabelWidth,
+            y: totalRowBottom + 6,
+            size: 11,
+            kannadaFont: customFont,
+            latinFont: latinBoldFont,
+            color: rgb(0, 0, 0),
+          });
+
+          const formattedTotalAmount = Number(bill.amount).toFixed(2);
+          const totalValWidth = latinBoldFont.widthOfTextAtSize(formattedTotalAmount, 11);
+          page.drawText(formattedTotalAmount, {
+            x: 534 - totalValWidth,
+            y: totalRowBottom + 6,
+            size: 11,
+            font: latinBoldFont,
+            color: rgb(0, 0, 0),
+          });
+
+          finalTableBottomY = totalRowBottom;
+        }
 
         // Draw Amount in Words row
-        const wordsY = totalRowBottom - 25;
+        const wordsY = finalTableBottomY - 25;
         drawMixedText(page, "Amount in Rupees :-", {
           x: 51.1,
           y: wordsY,

@@ -25,6 +25,13 @@ const itemSchema = z.object({
   amount: z.coerce.number().positive("Amount must be greater than zero"),
 });
 
+const deductionSchema = z.object({
+  deduction_type: z.string().min(1, "Deduction type is required"),
+  deduction_mode: z.enum(["percentage", "fixed"]),
+  deduction_value: z.coerce.number().min(0, "Value cannot be negative"),
+  deduction_amount: z.coerce.number().min(0, "Amount cannot be negative").optional(),
+});
+
 const billFormSchema = z.object({
   dc_bill_number: z.string().min(1, "D.C. Bill Number is required"),
   cheque_number: z
@@ -36,6 +43,49 @@ const billFormSchema = z.object({
   payee_address: z.string().min(1, "Payee Address is required"),
   amount_in_words: z.string().min(1, "Amount in Words is required"),
   items: z.array(itemSchema).min(1, "At least one item must be added"),
+  deductions: z.array(deductionSchema).default([]),
+}).superRefine((data, ctx) => {
+  const grossAmount = (data.items || []).reduce((sum, item) => sum + (Number(item?.amount) || 0), 0);
+  let totalDeductions = 0;
+
+  (data.deductions || []).forEach((ded, index) => {
+    const val = Number(ded.deduction_value) || 0;
+    if (ded.deduction_mode === "percentage") {
+      if (val < 0 || val > 100) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Percentage must be between 0 and 100",
+          path: ["deductions", index, "deduction_value"],
+        });
+      }
+      totalDeductions += (grossAmount * val) / 100;
+    } else {
+      if (val < 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Amount cannot be negative",
+          path: ["deductions", index, "deduction_value"],
+        });
+      }
+      if (val > grossAmount) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Fixed amount cannot exceed Gross Amount",
+          path: ["deductions", index, "deduction_value"],
+        });
+      }
+      totalDeductions += val;
+    }
+  });
+
+  const netPayable = grossAmount - totalDeductions;
+  if (netPayable < 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Net payable cannot be negative. Deductions exceed Gross Amount.",
+      path: ["amount_in_words"],
+    });
+  }
 });
 
 type BillFormValues = z.infer<typeof billFormSchema>;
@@ -92,6 +142,7 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
       })) || [
         { bill_number: "", bill_date: "", purpose: "", amount: 0 },
       ],
+      deductions: initialData?.deductions || [],
     },
   });
 
@@ -193,25 +244,47 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
     };
     fetchNextBillNumber();
   }, [billId, supabase, setValue, financialYear]);
-
   // Setup useFieldArray for items list
   const { fields, append, remove } = useFieldArray({
     control,
     name: "items",
   });
 
-  // Watch items array to calculate total amount
-  const watchedItems = watch("items") || [];
-  const totalAmount = watchedItems.reduce((sum: number, item: any) => sum + (Number(item?.amount) || 0), 0);
+  // Setup useFieldArray for deductions list
+  const { fields: deductionFields, append: appendDeduction, remove: removeDeduction } = useFieldArray({
+    control,
+    name: "deductions",
+  });
 
-  // Auto-calculate and update amount in words on totalAmount change
+  // Watch items and deductions arrays to calculate amounts
+  const watchedItems = watch("items") || [];
+  const watchedDeductions = watch("deductions") || [];
+
+  const grossAmount = watchedItems.reduce((sum: number, item: any) => sum + (Number(item?.amount) || 0), 0);
+
+  // Calculate individual deduction amounts and total deductions
+  const calculatedDeductions = watchedDeductions.map((ded: any) => {
+    const val = Number(ded.deduction_value) || 0;
+    const amount = ded.deduction_mode === "percentage"
+      ? (grossAmount * val) / 100
+      : val;
+    return {
+      ...ded,
+      deduction_amount: Number(amount.toFixed(2)),
+    };
+  });
+
+  const totalDeductions = calculatedDeductions.reduce((sum: number, ded: any) => sum + ded.deduction_amount, 0);
+  const netPayableAmount = Math.max(0, grossAmount - totalDeductions);
+
+  // Auto-calculate and update amount in words on netPayableAmount change
   useEffect(() => {
-    if (totalAmount > 0) {
-      setValue("amount_in_words", convertNumberToWords(totalAmount));
+    if (netPayableAmount > 0) {
+      setValue("amount_in_words", convertNumberToWords(netPayableAmount));
     } else {
       setValue("amount_in_words", "");
     }
-  }, [totalAmount, setValue]);
+  }, [netPayableAmount, setValue]);
 
   // Form actions
   const saveBillToDb = async (values: Partial<BillFormValues>, isGenerated: boolean) => {
@@ -223,12 +296,15 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
         cheque_date: values.cheque_date || null,
         payee_name: values.payee_name || "",
         payee_address: values.payee_address || "",
-        amount: totalAmount,
+        amount: netPayableAmount,
         amount_in_words: values.amount_in_words || "",
         items: values.items || [],
         status: isGenerated ? "generated" : "draft",
         created_by: userId,
         updated_at: new Date().toISOString(),
+        gross_amount: grossAmount,
+        total_deductions: totalDeductions,
+        net_payable_amount: netPayableAmount,
       };
 
       let responseError = null;
@@ -255,6 +331,33 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
       if (responseError) {
         toast.error("Database save failed: " + responseError.message);
       } else {
+        // Handle deductions saving
+        // 1. Delete existing deductions for this bill
+        await supabase
+          .from("dc_bill_deductions")
+          .delete()
+          .eq("bill_id", returnedId);
+
+        // 2. Insert new deductions if any
+        if (calculatedDeductions.length > 0) {
+          const deductionsToInsert = calculatedDeductions.map((ded: any) => ({
+            bill_id: returnedId,
+            deduction_type: ded.deduction_type,
+            deduction_mode: ded.deduction_mode,
+            deduction_value: Number(ded.deduction_value) || 0,
+            deduction_amount: Number(ded.deduction_amount) || 0,
+          }));
+
+          const { error: dedError } = await supabase
+            .from("dc_bill_deductions")
+            .insert(deductionsToInsert);
+
+          if (dedError) {
+            console.error("Failed to save deductions:", dedError);
+            toast.error("Failed to save deductions: " + dedError.message);
+          }
+        }
+
         // Log action in audit table
         const auditAction = billId ? "edited" : (isDuplicate ? "duplicated" : "generated");
         await logActivity(
@@ -273,7 +376,6 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
       setLoading(false);
     }
   };
-
   // Handler for Save Draft (bypasses full form Zod validation)
   const handleSaveDraft = async () => {
     // Read the current form values manually to skip zod resolver constraints
@@ -297,9 +399,17 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
       amount: Number(item.amount) || 0,
     }));
 
+    const cleanedDeductions = (currentValues.deductions || []).map((ded: any) => ({
+      deduction_type: ded.deduction_type || "",
+      deduction_mode: ded.deduction_mode || "percentage",
+      deduction_value: Number(ded.deduction_value) || 0,
+      deduction_amount: Number(ded.deduction_amount) || 0,
+    }));
+
     const draftValues = {
       ...currentValues,
       items: cleanedItems,
+      deductions: cleanedDeductions,
     };
 
     await saveBillToDb(draftValues, false);
@@ -542,9 +652,9 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
                     
                     {/* Totals Row */}
                     <TableRow className="bg-slate-100 hover:bg-slate-100 font-bold border-t border-slate-300">
-                      <TableCell colSpan={4} className="text-right text-xs font-bold text-slate-700 uppercase pr-4">Total Amount:</TableCell>
+                      <TableCell colSpan={4} className="text-right text-xs font-bold text-slate-700 uppercase pr-4">Gross Amount:</TableCell>
                       <TableCell className="text-right text-sm font-black text-slate-800 pr-4">
-                        ₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ₹{grossAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell></TableCell>
                     </TableRow>
@@ -667,9 +777,9 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
  
                 {/* Mobile Total Amount Summary */}
                 <div className="bg-slate-100 p-3 rounded-md flex justify-between items-center font-bold text-xs">
-                  <span className="text-slate-600">Total Amount:</span>
+                  <span className="text-slate-600">Gross Amount:</span>
                   <span className="text-sm font-black text-slate-800">
-                    ₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₹{grossAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -678,6 +788,150 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
             {(errors.items as any)?.root && (
               <p className="text-xs font-semibold text-red-500">{String((errors.items as any).root.message)}</p>
             )}
+          </div>
+
+          {/* Deductions Section */}
+          <div className="space-y-4 border-t border-slate-100 pt-6">
+            <div className="flex flex-row justify-between items-center gap-2">
+              <div>
+                <Label className="text-sm font-black text-slate-800 uppercase tracking-wider">Deductions (ಕಡಿತಗಳು)</Label>
+                <p className="text-[10px] text-slate-500">Add custom deductions (TDS, GST, Security Deposit, etc.)</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => appendDeduction({ deduction_type: "", deduction_mode: "percentage", deduction_value: 0 })}
+                className="border-slate-300 text-blue-700 font-bold text-xs flex items-center gap-1.5 h-9 px-3 hover:bg-slate-50 cursor-pointer"
+              >
+                <Plus className="h-4 w-4" />
+                Add Deduction
+              </Button>
+            </div>
+
+            {deductionFields.length > 0 ? (
+              <div className="space-y-3 bg-slate-50/50 p-4 border border-slate-200 rounded-xl">
+                {deductionFields.map((field, index) => {
+                  const dedError = (errors.deductions as any)?.[index];
+                  const dedAmount = calculatedDeductions[index]?.deduction_amount || 0;
+
+                  return (
+                    <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end bg-white p-3 border border-slate-200 rounded-lg shadow-sm">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-bold text-slate-500">Deduction Type</Label>
+                        <Input
+                          placeholder="e.g. TDS / GST / Security Deposit"
+                          className="h-9 text-xs border-slate-200"
+                          {...register(`deductions.${index}.deduction_type`)}
+                        />
+                        {dedError?.deduction_type && (
+                          <p className="text-[9px] font-semibold text-red-500 mt-1">Required</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-bold text-slate-500">Deduction Mode</Label>
+                        <Controller
+                          control={control}
+                          name={`deductions.${index}.deduction_mode`}
+                          render={({ field: selectField }) => (
+                            <select
+                              {...selectField}
+                              className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-slate-350 cursor-pointer"
+                            >
+                              <option value="percentage">Percentage (%)</option>
+                              <option value="fixed">Fixed Amount (₹)</option>
+                            </select>
+                          )}
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-bold text-slate-500">
+                          {watch(`deductions.${index}.deduction_mode`) === "percentage" ? "Percentage (%)" : "Fixed Amount (₹)"}
+                        </Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="0"
+                          className="h-9 text-xs border-slate-200 font-semibold"
+                          {...register(`deductions.${index}.deduction_value`)}
+                        />
+                        {dedError?.deduction_value && (
+                          <p className="text-[9px] font-semibold text-red-500 mt-1">{dedError.deduction_value.message}</p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-[10px] font-bold text-slate-500">Deduction Amount</Label>
+                          <div className="h-9 text-xs border border-slate-200 bg-slate-50 rounded-md flex items-center px-3 font-black text-slate-800">
+                            ₹{dedAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeDeduction(index)}
+                          className="h-9 w-9 text-slate-400 hover:text-red-700 mt-5 border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer shrink-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-6 border border-dashed border-slate-200 bg-slate-50/30 rounded-xl text-xs text-slate-400 font-semibold">
+                No deductions added yet. Click &quot;Add Deduction&quot; to define custom deduction rows.
+              </div>
+            )}
+          </div>
+
+          {/* Live Calculations Summary Card */}
+          <div className="bg-slate-900 text-slate-100 rounded-xl p-4 md:p-6 shadow-md space-y-4">
+            <h4 className="text-xs font-black tracking-wider uppercase text-blue-400">Calculation Summary (ಲೆಕ್ಕಾಚಾರದ ವಿವರ)</h4>
+            <div className="space-y-2.5 text-xs">
+              <div className="flex justify-between items-center text-slate-400">
+                <span>Gross Amount (ಒಟ್ಟು ಮೊತ್ತ):</span>
+                <span className="font-bold text-white">
+                  ₹{grossAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              
+              {calculatedDeductions.length > 0 && (
+                <div className="border-t border-slate-800 pt-2.5 space-y-2">
+                  <div className="text-[10px] font-bold text-slate-500 tracking-wider uppercase mb-1">Deductions Breakdown:</div>
+                  {calculatedDeductions.map((ded: any, idx: number) => {
+                    const label = ded.deduction_type || `Deduction #${idx + 1}`;
+                    const details = ded.deduction_mode === "percentage" ? ` (${ded.deduction_value}%)` : "";
+                    return (
+                      <div key={idx} className="flex justify-between items-center text-slate-300 pl-2 border-l border-red-500">
+                        <span>{label}{details}:</span>
+                        <span className="font-semibold text-red-400">
+                          - ₹{ded.deduction_amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  <div className="flex justify-between items-center text-slate-300 font-bold border-t border-slate-800 pt-2">
+                    <span>Total Deductions (ಒಟ್ಟು ಕಡಿತಗಳು):</span>
+                    <span className="text-red-400">
+                      - ₹{totalDeductions.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-slate-700 pt-3 flex justify-between items-center text-sm font-black tracking-wide text-white">
+                <span className="text-blue-400">Net Payable Amount (ನಿವ್ವಳ ಪಾವತಿ ಮೊತ್ತ):</span>
+                <span className="text-base text-emerald-400">
+                  ₹{netPayableAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Amount in words */}

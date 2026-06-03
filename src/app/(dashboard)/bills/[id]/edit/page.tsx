@@ -20,7 +20,7 @@ export default async function EditBillPage({ params }: EditBillPageProps) {
 
   const { data: bill, error } = await supabase
     .from("dc_bills")
-    .select("*")
+    .select("*, dc_bill_deductions(*)")
     .eq("id", id)
     .single();
 
@@ -28,13 +28,23 @@ export default async function EditBillPage({ params }: EditBillPageProps) {
     notFound();
   }
 
+  const formattedBill = {
+    ...bill,
+    deductions: bill.dc_bill_deductions ? bill.dc_bill_deductions.map((d: any) => ({
+      deduction_type: d.deduction_type,
+      deduction_mode: d.deduction_mode,
+      deduction_value: Number(d.deduction_value) || 0,
+      deduction_amount: Number(d.deduction_amount) || 0,
+    })) : [],
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-slate-800">Edit DC Bill</h2>
         <p className="text-xs text-slate-500">Modify stored variables for this contingency statement</p>
       </div>
-      <BillForm billId={id} initialData={bill} financialYear={financialYear} />
+      <BillForm billId={id} initialData={formattedBill} financialYear={financialYear} />
     </div>
   );
 }

@@ -22,7 +22,7 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
 
   const { data: bill, error } = await supabase
     .from("dc_bills")
-    .select("*, users(full_name)")
+    .select("*, users(full_name), dc_bill_deductions(*)")
     .eq("id", id)
     .single();
 
@@ -168,6 +168,65 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
             </CardContent>
           </Card>
 
+          {/* Deductions & Financial Summary Card */}
+          {bill.dc_bill_deductions && (bill.dc_bill_deductions as any[]).length > 0 ? (
+            <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
+              <CardHeader className="border-b border-slate-100 py-3.5 px-4 sm:px-6">
+                <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <Landmark className="h-4 w-4 text-blue-700" />
+                  Financial Summary &amp; Deductions Breakdown
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-slate-400 font-semibold">Gross Total Amount (ಒಟ್ಟು ಮೊತ್ತ)</p>
+                    <p className="font-bold text-slate-800 text-sm">₹{Number(bill.gross_amount || bill.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-slate-400 font-semibold">Total Deductions (ಒಟ್ಟು ಕಡಿತಗಳು)</p>
+                    <p className="font-bold text-red-650 text-sm">- ₹{Number(bill.total_deductions || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-150 pt-4 space-y-2">
+                  <p className="text-slate-505 font-bold tracking-wider uppercase text-[10px]">Deductions List:</p>
+                  <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    {(bill.dc_bill_deductions as any[]).map((ded: any, index: number) => {
+                      const modeStr = ded.deduction_mode === "percentage" ? ` (${ded.deduction_value}%)` : "";
+                      return (
+                        <div key={index} className="flex justify-between items-center text-slate-700 font-medium">
+                          <span>{ded.deduction_type}{modeStr}:</span>
+                          <span className="font-bold text-red-650">- ₹{Number(ded.deduction_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-150 pt-4 flex justify-between items-center text-sm font-black bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <span className="text-blue-700">Net Payable Amount (ನಿವ್ವಳ ಪಾವತಿ):</span>
+                  <span className="text-emerald-700 text-base">₹{Number(bill.net_payable_amount || bill.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
+              <CardHeader className="border-b border-slate-100 py-3.5 px-4 sm:px-6">
+                <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <Landmark className="h-4 w-4 text-blue-700" />
+                  Financial Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 text-xs flex justify-between items-center font-bold bg-slate-50 rounded-lg border border-slate-100">
+                <span className="text-slate-650">Net Payable Amount (ನಿವ್ವಳ ಪಾವತಿ):</span>
+                <span className="text-sm font-black text-slate-900">
+                  ₹{Number(bill.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Items breakdown list */}
           <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
             <CardHeader className="border-b border-slate-100 py-3.5 px-4 sm:px-6">
@@ -207,9 +266,9 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
                       </TableRow>
                     )}
                     <TableRow className="bg-slate-50 hover:bg-slate-50 border-t border-slate-300 font-bold">
-                      <TableCell colSpan={3} className="text-right text-xs uppercase pr-4 font-bold text-slate-650">Total Amount:</TableCell>
+                      <TableCell colSpan={3} className="text-right text-xs uppercase pr-4 font-bold text-slate-650">Gross Amount:</TableCell>
                       <TableCell className="text-right text-sm font-black text-slate-900 pr-6">
-                        ₹{Number(bill.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                        ₹{Number(bill.gross_amount || bill.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -246,9 +305,9 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
                 
                 {/* Mobile Total Row */}
                 <div className="bg-slate-100 p-4 flex justify-between items-center text-xs font-bold border-t border-slate-200">
-                  <span className="text-slate-650 uppercase">Total Amount:</span>
+                  <span className="text-slate-650 uppercase">Gross Amount:</span>
                   <span className="text-sm font-black text-slate-900">
-                    ₹{Number(bill.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    ₹{Number(bill.gross_amount || bill.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
