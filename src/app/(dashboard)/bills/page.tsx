@@ -213,7 +213,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
                               billId={bill.id}
                               billNumber={bill.dc_bill_number}
                               buttonVariant="ghost"
-                              className="h-8 w-8 text-slate-500 hover:text-red-700 hover:bg-red-50"
+                              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
                               title="Delete Bill"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -303,7 +303,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
                           billId={bill.id}
                           billNumber={bill.dc_bill_number}
                           buttonVariant="outline"
-                          className="h-9 w-9 text-slate-500 border-slate-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 active:bg-red-100"
+                          className="h-9 w-9 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 active:bg-red-100"
                           title="Delete Bill"
                         >
                           <Trash2 className="h-4 w-4" />

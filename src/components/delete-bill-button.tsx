@@ -38,9 +38,17 @@ export function DeleteBillButton({
   const [loading, setLoading] = useState(false);
 
   const normalizedBillNumber = billNumber.trim();
+  const sequenceNumber = billNumber.split("/")[0].trim();
+  const parsedSequence = parseInt(sequenceNumber, 10);
+
+  const enteredInput = confirmInput.trim();
+  const isMatch =
+    enteredInput === sequenceNumber ||
+    (!isNaN(parsedSequence) && !isNaN(parseInt(enteredInput, 10)) && parseInt(enteredInput, 10) === parsedSequence) ||
+    enteredInput === normalizedBillNumber;
 
   const handleConfirmDelete = async () => {
-    if (confirmInput.trim() !== normalizedBillNumber) {
+    if (!isMatch) {
       toast.error("The entered D.C. Bill Number does not match.");
       return;
     }
@@ -91,7 +99,7 @@ export function DeleteBillButton({
             Confirm Bill Deletion
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-500 leading-relaxed">
-            This action cannot be undone. To confirm, please type the exact D.C. Bill Number below:
+            This action cannot be undone. To confirm, please type the D.C. Bill Number below:
           </DialogDescription>
         </DialogHeader>
 
@@ -99,12 +107,12 @@ export function DeleteBillButton({
           <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-lg text-xs font-semibold text-amber-800 flex justify-between items-center">
             <span>Bill Number to type:</span>
             <span className="font-mono bg-white border border-amber-300 px-2 py-0.5 rounded font-black text-amber-900 select-all">
-              {normalizedBillNumber}
+              {sequenceNumber}
             </span>
           </div>
 
           <Input
-            placeholder="Type D.C. Bill Number to confirm"
+            placeholder={`Type "${sequenceNumber}" to confirm`}
             value={confirmInput}
             onChange={(e) => setConfirmInput(e.target.value)}
             className="h-10 text-xs border-slate-200"
@@ -124,7 +132,7 @@ export function DeleteBillButton({
           <Button
             type="button"
             variant="destructive"
-            disabled={loading || confirmInput.trim() !== normalizedBillNumber}
+            disabled={loading || !isMatch}
             onClick={handleConfirmDelete}
             className="h-10 text-xs font-bold bg-red-650 hover:bg-red-700 text-white flex items-center justify-center gap-1.5"
           >
