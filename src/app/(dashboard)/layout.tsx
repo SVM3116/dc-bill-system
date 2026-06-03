@@ -102,7 +102,7 @@ export default function DashboardLayout({
     <div className="flex min-h-screen bg-slate-100 font-sans">
       
       {/* 1. DESKTOP FIXED SIDEBAR */}
-      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 hidden md:flex">
+      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 hidden md:flex sticky top-0 h-screen">
         {/* Brand header */}
         <div className="p-4 border-b border-slate-800 bg-slate-950 flex items-center gap-3">
           <div className="bg-blue-600 text-white p-1.5 rounded">
@@ -115,7 +115,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
