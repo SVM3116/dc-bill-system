@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface DeleteBillButtonProps {
   billId: string;
@@ -131,10 +132,14 @@ export function DeleteBillButton({
           </Button>
           <Button
             type="button"
-            variant="destructive"
             disabled={loading}
             onClick={handleConfirmDelete}
-            className="h-10 text-xs font-bold bg-red-650 hover:bg-red-700 text-white flex items-center justify-center gap-1.5"
+            className={cn(
+              "h-10 text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 border rounded-lg cursor-pointer",
+              isMatch
+                ? "bg-red-600 text-white hover:bg-red-700 border-transparent shadow-sm"
+                : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+            )}
           >
             {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Confirm Delete
