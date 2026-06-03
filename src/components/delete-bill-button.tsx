@@ -132,7 +132,7 @@ export function DeleteBillButton({
           <Button
             type="button"
             variant="destructive"
-            disabled={loading || !isMatch}
+            disabled={loading}
             onClick={handleConfirmDelete}
             className="h-10 text-xs font-bold bg-red-650 hover:bg-red-700 text-white flex items-center justify-center gap-1.5"
           >
