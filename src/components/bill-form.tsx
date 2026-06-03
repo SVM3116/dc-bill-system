@@ -16,6 +16,7 @@ import { Loader2, Plus, Trash2, Save, FileCheck, ArrowLeft } from "lucide-react"
 import Link from "next/link";
 import { convertNumberToWords } from "@/lib/number-to-words";
 import { logActivity } from "@/app/actions/activity-actions";
+import { upsertBill } from "@/app/actions/bill-actions";
 
 // Zod validation schema for full submission
 const itemSchema = z.object({
@@ -299,64 +300,16 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
         amount: netPayableAmount,
         amount_in_words: values.amount_in_words || "",
         items: values.items || [],
-        status: isGenerated ? "generated" : "draft",
-        created_by: userId,
-        updated_at: new Date().toISOString(),
+        status: (isGenerated ? "generated" : "draft") as "draft" | "generated",
         gross_amount: grossAmount,
         total_deductions: totalDeductions,
         net_payable_amount: netPayableAmount,
       };
 
-      let responseError = null;
-      let returnedId = billId;
+      const result = await upsertBill(billId, billData, calculatedDeductions);
 
-      if (billId) {
-        // Edit existing
-        const { error } = await supabase
-          .from("dc_bills")
-          .update(billData)
-          .eq("id", billId);
-        responseError = error;
-      } else {
-        // Insert new
-        const { data, error } = await supabase
-          .from("dc_bills")
-          .insert([billData])
-          .select("id")
-          .single();
-        responseError = error;
-        if (data) returnedId = data.id;
-      }
-
-      if (responseError) {
-        toast.error("Database save failed: " + responseError.message);
-      } else {
-        // Handle deductions saving
-        // 1. Delete existing deductions for this bill
-        await supabase
-          .from("dc_bill_deductions")
-          .delete()
-          .eq("bill_id", returnedId);
-
-        // 2. Insert new deductions if any
-        if (calculatedDeductions.length > 0) {
-          const deductionsToInsert = calculatedDeductions.map((ded: any) => ({
-            bill_id: returnedId,
-            deduction_type: ded.deduction_type,
-            deduction_mode: ded.deduction_mode,
-            deduction_value: Number(ded.deduction_value) || 0,
-            deduction_amount: Number(ded.deduction_amount) || 0,
-          }));
-
-          const { error: dedError } = await supabase
-            .from("dc_bill_deductions")
-            .insert(deductionsToInsert);
-
-          if (dedError) {
-            console.error("Failed to save deductions:", dedError);
-            toast.error("Failed to save deductions: " + dedError.message);
-          }
-        }
+      if (result.success) {
+        const returnedId = result.id;
 
         // Log action in audit table
         const auditAction = billId ? "edited" : (isDuplicate ? "duplicated" : "generated");
@@ -371,7 +324,7 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
       }
     } catch (err) {
       console.error(err);
-      toast.error("An unexpected error occurred saving the bill.");
+      toast.error("Database save failed: " + (err as Error).message);
     } finally {
       setLoading(false);
     }

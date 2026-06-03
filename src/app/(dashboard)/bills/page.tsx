@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FilePlus2, SearchCode, Eye, Edit, Trash2, Download, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BillsFilter } from "@/components/bills-filter";
-import { deleteBill } from "@/app/actions/bill-actions";
+import { DeleteBillButton } from "@/components/delete-bill-button";
 import { getSelectedFinancialYear } from "@/lib/financial-year";
 
 export const revalidate = 0; // Fresh fetches
@@ -209,17 +209,15 @@ export default async function BillsPage({ searchParams }: PageProps) {
                                 <Download className="h-4 w-4" />
                               </Button>
                             </a>
-                            <form action={deleteBill.bind(null, bill.id)} className="inline">
-                              <Button
-                                type="submit"
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-500 hover:text-red-700"
-                                title="Delete Bill"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </form>
+                            <DeleteBillButton
+                              billId={bill.id}
+                              billNumber={bill.dc_bill_number}
+                              buttonVariant="ghost"
+                              className="h-8 w-8 text-slate-500 hover:text-red-700 hover:bg-red-50"
+                              title="Delete Bill"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </DeleteBillButton>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -301,17 +299,15 @@ export default async function BillsPage({ searchParams }: PageProps) {
                             <Download className="h-4 w-4" />
                           </Button>
                         </a>
-                        <form action={deleteBill.bind(null, bill.id)} className="inline">
-                          <Button
-                            type="submit"
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9 text-slate-500 border-slate-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 active:bg-red-100"
-                            title="Delete Bill"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </form>
+                        <DeleteBillButton
+                          billId={bill.id}
+                          billNumber={bill.dc_bill_number}
+                          buttonVariant="outline"
+                          className="h-9 w-9 text-slate-500 border-slate-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 active:bg-red-100"
+                          title="Delete Bill"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </DeleteBillButton>
                       </div>
                     </div>
                   </div>
