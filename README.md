@@ -4,6 +4,9 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Database-15c38b?style=for-the-badge&logo=supabase)](https://supabase.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38bdf8?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-dc--bill--system.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://dc-bill-system.vercel.app/)
+
+**Live URL**: [https://dc-bill-system.vercel.app/](https://dc-bill-system.vercel.app/)
 
 A secure, multi-tenant administrative SaaS platform designed for **Karnataka Residential Educational Institutions Society (KREIS)** schools. Each registered school operates independently, configures its profile, and programmatically compiles official **Detailed Contingency (DC) Bills** onto pre-printed layouts.
 
