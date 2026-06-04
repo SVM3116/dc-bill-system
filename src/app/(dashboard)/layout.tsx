@@ -307,7 +307,7 @@ export default function DashboardLayout({
               <span className="text-slate-500">Contact:</span>
               <a href="tel:+917975464020" className="hover:text-blue-600 hover:underline">+91 7975464020</a>
             </p>
-            <p className="text-right truncate max-w-xl">
+            <p className="text-center md:text-right w-full md:max-w-xl text-slate-500 mt-1 md:mt-0">
               {schoolNameKn || schoolNameEn} {schoolAddressKn ? `- ${schoolAddressKn}` : ""}
             </p>
           </div>
