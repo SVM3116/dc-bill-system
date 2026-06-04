@@ -138,5 +138,6 @@
   }
   html {
     @apply font-sans;
+    font-size: 106%; /* Slightly increased global scale — all rem-based sizes scale uniformly */
   }
 }
