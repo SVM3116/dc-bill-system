@@ -112,7 +112,7 @@ export default function DeveloperPage() {
               <Code2 className="h-4 w-4 text-blue-600" />
               Professional Summary
             </h3>
-            <p className="text-slate-650 text-sm leading-relaxed">
+            <p className="text-slate-600 text-sm leading-relaxed">
               B.Tech Computer Science and Business Systems student (6th Semester, VTU) with hands-on experience building and deploying robust full-stack applications. Skilled in backend architecture, role-based access control, REST API design, and cloud deployments. Passionate about creating secure, efficient, and user-centric digital tools.
             </p>
             <div className="mt-4 p-4 bg-blue-50/55 border border-blue-100 rounded-lg flex items-start gap-3">
@@ -121,7 +121,7 @@ export default function DeveloperPage() {
               </div>
               <div>
                 <h4 className="text-xs font-bold text-blue-900">Alumnus Connection</h4>
-                <p className="text-xs text-blue-750 mt-1 leading-relaxed">
+                <p className="text-xs text-blue-700 mt-1 leading-relaxed">
                   As a proud former student of <strong className="font-bold">Morarji Desai Residential School (Sulibele)</strong> and <strong className="font-bold">Morarji Desai PU College (Hosakote)</strong>, this DC Bill System was built with personal dedication to simplify financial administration for school principal and district office teams.
                 </p>
               </div>
@@ -135,7 +135,7 @@ export default function DeveloperPage() {
               Key Projects
             </h3>
             <div className="space-y-4">
-              <div className="p-4 border border-slate-100 rounded-lg hover:border-slate-350 hover:shadow-sm transition-all">
+              <div className="p-4 border border-slate-100 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all">
                 <div className="flex justify-between items-start">
                   <h4 className="font-bold text-slate-900 text-sm">Farewell &apos;26 - Payment System</h4>
                   <a href="https://vtu-farewell-pay.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-0.5 font-semibold">
@@ -145,12 +145,12 @@ export default function DeveloperPage() {
                 <p className="text-slate-500 text-xs mt-1">Role-based payment collection system serving 800+ concurrent students with audit logging.</p>
               </div>
 
-              <div className="p-4 border border-slate-100 rounded-lg hover:border-slate-350 hover:shadow-sm transition-all">
+              <div className="p-4 border border-slate-100 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all">
                 <h4 className="font-bold text-slate-900 text-sm">One Rupee RapidFix</h4>
                 <p className="text-slate-500 text-xs mt-1">Real-time breakdown service and mechanic mapping platform using Google Maps API.</p>
               </div>
 
-              <div className="p-4 border border-slate-100 rounded-lg hover:border-slate-350 hover:shadow-sm transition-all">
+              <div className="p-4 border border-slate-100 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all">
                 <h4 className="font-bold text-slate-900 text-sm">SkillBridge AI</h4>
                 <p className="text-slate-500 text-xs mt-1">Onboarding assessment suite using Gemini AI API to parse resumes and map learning pathways.</p>
               </div>

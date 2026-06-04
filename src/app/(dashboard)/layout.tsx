@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
-import { Building2, FilePlus2, Files, LayoutDashboard, LogOut, User, Menu, X, Code } from "lucide-react";
+import { Building2, FilePlus2, Files, LayoutDashboard, LogOut, User, Menu, X, Code, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 function getClientFinancialYear(): string {
@@ -29,21 +29,37 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
-  const [userName, setUserName] = useState("Admin User");
+  const [userName, setUserName] = useState("Principal");
+  const [schoolNameEn, setSchoolNameEn] = useState("School Dashboard");
+  const [schoolNameKn, setSchoolNameKn] = useState("");
+  const [schoolAddressKn, setSchoolAddressKn] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [financialYear, setFinancialYear] = useState("2026-27");
 
-  // Fetch user information
+  // Fetch school configuration and user information
   useEffect(() => {
-    const getUser = async () => {
+    const getSchoolData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email || "");
-        setUserName(user.user_metadata?.full_name || "Admin User");
+        const { data: school } = await supabase
+          .from("schools")
+          .select("school_name_en, principal_name, school_name_kn, school_address_kn")
+          .eq("id", user.id)
+          .single();
+        if (school) {
+          setSchoolNameEn(school.school_name_en);
+          setUserName(school.principal_name);
+          setSchoolNameKn(school.school_name_kn || "");
+          setSchoolAddressKn(school.school_address_kn || "");
+        } else {
+          setSchoolNameEn(user.user_metadata?.school_name_en || "School");
+          setUserName(user.user_metadata?.principal_name || "Principal");
+        }
       }
     };
-    getUser();
+    getSchoolData();
   }, [supabase]);
 
   // Read/initialize financial year cookie
@@ -96,10 +112,15 @@ export default function DashboardLayout({
       href: "/bills",
       icon: Files,
     },
+    {
+      name: "School Setup",
+      href: "/school-setup",
+      icon: Settings,
+    },
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-100 font-sans">
+    <div className="flex min-h-screen bg-slate-50 font-sans">
       
       {/* 1. DESKTOP FIXED SIDEBAR */}
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 hidden md:flex sticky top-0 h-screen">
@@ -137,13 +158,6 @@ export default function DashboardLayout({
 
         {/* Profile and Logout info */}
         <div className="p-4 border-t border-slate-800 bg-slate-950">
-          <Link
-            href="/developer"
-            className="w-full flex items-center justify-center gap-2 mb-3 px-3 py-2 text-xs font-semibold text-slate-350 bg-slate-850 hover:bg-blue-900 hover:text-white rounded-md border border-slate-800 transition-colors cursor-pointer"
-          >
-            <Code className="h-3.5 w-3.5" />
-            Developer Profile
-          </Link>
           <div className="flex items-center gap-3 mb-4">
             <div className="bg-slate-800 p-2 rounded-full text-slate-300">
               <User className="h-4 w-4" />
@@ -155,7 +169,7 @@ export default function DashboardLayout({
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-400 bg-slate-850 hover:bg-red-950 hover:text-red-400 rounded-md border border-slate-800 transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-400 bg-slate-800 hover:bg-red-950 hover:text-red-400 rounded-md border border-slate-700 transition-colors cursor-pointer"
           >
             <LogOut className="h-3.5 w-3.5" />
             Sign Out
@@ -219,14 +233,6 @@ export default function DashboardLayout({
 
             {/* Profile and Logout info */}
             <div className="p-4 border-t border-slate-800 bg-slate-950">
-              <Link
-                href="/developer"
-                onClick={() => setIsDrawerOpen(false)}
-                className="w-full flex items-center justify-center gap-2 mb-3 px-3 py-2 text-xs font-semibold text-slate-350 bg-slate-850 hover:bg-blue-900 hover:text-white rounded-md border border-slate-800 transition-colors cursor-pointer"
-              >
-                <Code className="h-3.5 w-3.5" />
-                Developer Profile
-              </Link>
               <div className="flex items-center gap-3 mb-4">
                 <div className="bg-slate-800 p-2 rounded-full text-slate-300">
                   <User className="h-4 w-4" />
@@ -238,7 +244,7 @@ export default function DashboardLayout({
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-400 bg-slate-850 hover:bg-red-950 hover:text-red-400 rounded-md border border-slate-800 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-400 bg-slate-800 hover:bg-red-950 hover:text-red-400 rounded-md border border-slate-700 transition-colors cursor-pointer"
               >
                 <LogOut className="h-3.5 w-3.5" />
                 Sign Out
@@ -251,7 +257,7 @@ export default function DashboardLayout({
       {/* 3. MAIN CONTENT CONTAINER */}
       <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
         {/* Top Navbar Header */}
-        <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shadow-sm">
+        <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shadow-sm sticky top-0 z-40">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsDrawerOpen(true)}
@@ -262,9 +268,7 @@ export default function DashboardLayout({
             </button>
             
             <h1 className="text-xs md:text-sm font-bold text-slate-800 leading-tight">
-              {/* Responsive school title: short on mobile, full on desktop */}
-              <span className="inline md:hidden">MDRS, Malur</span>
-              <span className="hidden md:inline">Morarji Desai Residential School, Malur</span>
+              {schoolNameEn}
             </h1>
           </div>
           
@@ -273,7 +277,7 @@ export default function DashboardLayout({
             <select
               value={financialYear}
               onChange={(e) => handleYearChange(e.target.value)}
-              className="text-xs font-bold text-slate-750 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors min-h-[38px]"
+              className="text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors min-h-[38px]"
             >
               <option value="2024-25">A.Y. 2024-25</option>
               <option value="2025-26">A.Y. 2025-26</option>
@@ -291,13 +295,21 @@ export default function DashboardLayout({
         {/* Developer Attribution Footer */}
         <footer className="py-4 border-t border-slate-200 bg-white text-center text-xs text-slate-500 shrink-0">
           <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-2">
-            <p className="flex items-center gap-1">
-              Developed by
+            <p className="flex flex-wrap items-center justify-center gap-1.5">
+              <span>Developed by</span>
               <Link href="/developer" className="font-bold text-blue-600 hover:text-blue-800 hover:underline">
                 Manoj Kumar V
               </Link>
+              <span className="text-slate-300">|</span>
+              <span className="text-slate-500">Email:</span>
+              <a href="mailto:svmmdrpu@gmail.com" className="hover:text-blue-600 hover:underline">svmmdrpu@gmail.com</a>
+              <span className="text-slate-300">|</span>
+              <span className="text-slate-500">Contact:</span>
+              <a href="tel:+917975464020" className="hover:text-blue-600 hover:underline">+91 7975464020</a>
             </p>
-            <p>Morarji Desai Residential School, Malur Town, Malur Taluk, Kolar District - 563130</p>
+            <p className="text-right truncate max-w-xl">
+              {schoolNameKn || schoolNameEn} {schoolAddressKn ? `- ${schoolAddressKn}` : ""}
+            </p>
           </div>
         </footer>
       </div>

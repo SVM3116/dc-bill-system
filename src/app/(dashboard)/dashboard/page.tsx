@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { FilePlus2, Files, Landmark, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSelectedFinancialYear } from "@/lib/financial-year";
+import { redirect } from "next/navigation";
 
 export const revalidate = 0; // Disable caching to fetch live data
 
@@ -13,10 +14,16 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const financialYear = await getSelectedFinancialYear();
 
-  // Fetch total count of bills filtered by financial year
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return redirect("/login");
+  }
+
+  // Fetch total count of bills filtered by financial year and school
   const { count: totalBillsCount, error: totalErr } = await supabase
     .from("dc_bills")
     .select("*", { count: "exact", head: true })
+    .eq("school_id", user.id)
     .ilike("dc_bill_number", `%${financialYear}`);
 
   // Fetch count of bills generated this month and filtered by financial year
@@ -27,6 +34,7 @@ export default async function DashboardPage() {
   const { count: generatedThisMonthCount, error: monthErr } = await supabase
     .from("dc_bills")
     .select("*", { count: "exact", head: true })
+    .eq("school_id", user.id)
     .eq("status", "generated")
     .gte("created_at", startOfMonth.toISOString())
     .ilike("dc_bill_number", `%${financialYear}`);
@@ -35,6 +43,7 @@ export default async function DashboardPage() {
   const { data: amtData, error: amtErr } = await supabase
     .from("dc_bills")
     .select("amount")
+    .eq("school_id", user.id)
     .eq("status", "generated")
     .ilike("dc_bill_number", `%${financialYear}`);
 
@@ -44,11 +53,16 @@ export default async function DashboardPage() {
   const { data: recentBills, error: billsErr } = await supabase
     .from("dc_bills")
     .select("id, dc_bill_number, cheque_date, payee_name, amount, status")
+    .eq("school_id", user.id)
     .ilike("dc_bill_number", `%${financialYear}`)
     .order("created_at", { ascending: false })
     .limit(5);
-
-
+  // Fetch school details to display Principal Name
+  const { data: school } = await supabase
+    .from("schools")
+    .select("principal_name")
+    .eq("id", user.id)
+    .single();
 
   return (
     <div className="space-y-6">
@@ -56,7 +70,7 @@ export default async function DashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-black tracking-tight text-slate-800">
-            Dashboard Summary <span className="text-blue-700 font-bold">({financialYear})</span>
+            Welcome, <span className="text-blue-700">{school?.principal_name || "Principal"}</span>
           </h2>
           <p className="text-xs text-slate-500">Quick overview of school DC bills statistics for A.Y. {financialYear}</p>
         </div>

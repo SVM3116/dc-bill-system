@@ -58,7 +58,7 @@ export async function upsertBill(
 
   const dbPayload = {
     ...billData,
-    created_by: user.id,
+    school_id: user.id,
     updated_at: new Date().toISOString(),
   };
 

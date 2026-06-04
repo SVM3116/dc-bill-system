@@ -19,6 +19,7 @@ export async function logActivity(
     const userName = user.user_metadata?.full_name || "Admin User";
 
     const { error } = await supabase.from("recent_activity").insert({
+      school_id: user.id,
       action_type: actionType,
       bill_number: billNumber,
       payee_name: payeeName,

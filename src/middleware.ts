@@ -34,9 +34,10 @@ export async function middleware(request: NextRequest) {
 
   const url = request.nextUrl.clone()
 
-  // Protect routes starting with /dashboard or /bills
+  // Protect routes starting with /dashboard or /bills or /school-setup
   const isDashboardRoute = url.pathname.startsWith('/dashboard') || url.pathname.startsWith('/bills')
   const isAuthRoute = url.pathname.startsWith('/login') || url.pathname.startsWith('/signup')
+  const isSetupRoute = url.pathname.startsWith('/school-setup')
 
   if (isDashboardRoute && !user) {
     // Redirect to login if accessing protected routes while unauthenticated
@@ -44,10 +45,30 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (isAuthRoute && user) {
-    // Redirect to dashboard if logged in and trying to access auth pages
-    url.pathname = '/dashboard'
+  if (isSetupRoute && !user) {
+    url.pathname = '/login'
     return NextResponse.redirect(url)
+  }
+
+  if (user) {
+    // Check if school setup is completed
+    const { data: school } = await supabase
+      .from('schools')
+      .select('school_profile_completed')
+      .eq('id', user.id)
+      .single()
+
+    const setupCompleted = school?.school_profile_completed || false
+
+    if (isAuthRoute) {
+      url.pathname = setupCompleted ? '/dashboard' : '/school-setup'
+      return NextResponse.redirect(url)
+    }
+
+    if (isDashboardRoute && !setupCompleted) {
+      url.pathname = '/school-setup'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

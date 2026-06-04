@@ -20,10 +20,16 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
   const id = resolvedParams.id;
   const supabase = await createClient();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    notFound();
+  }
+
   const { data: bill, error } = await supabase
     .from("dc_bills")
-    .select("*, users(full_name), dc_bill_deductions(*)")
+    .select("*, schools(school_name_en), dc_bill_deductions(*)")
     .eq("id", id)
+    .eq("school_id", user.id)
     .single();
 
   if (error || !bill) {
@@ -185,26 +191,26 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
                   </div>
                   <div className="space-y-1">
                     <p className="text-slate-400 font-semibold">Total Deductions (ಒಟ್ಟು ಕಡಿತಗಳು)</p>
-                    <p className="font-bold text-red-650 text-sm">- ₹{Number(bill.total_deductions || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
+                    <p className="font-bold text-red-600 text-sm">- ₹{Number(bill.total_deductions || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-150 pt-4 space-y-2">
-                  <p className="text-slate-505 font-bold tracking-wider uppercase text-[10px]">Deductions List:</p>
+                <div className="border-t border-slate-200 pt-4 space-y-2">
+                  <p className="text-slate-500 font-bold tracking-wider uppercase text-[10px]">Deductions List:</p>
                   <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
                     {(bill.dc_bill_deductions as any[]).map((ded: any, index: number) => {
                       const modeStr = ded.deduction_mode === "percentage" ? ` (${ded.deduction_value}%)` : "";
                       return (
                         <div key={index} className="flex justify-between items-center text-slate-700 font-medium">
                           <span>{ded.deduction_type}{modeStr}:</span>
-                          <span className="font-bold text-red-650">- ₹{Number(ded.deduction_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                          <span className="font-bold text-red-600">- ₹{Number(ded.deduction_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                <div className="border-t border-slate-150 pt-4 flex justify-between items-center text-sm font-black bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <div className="border-t border-slate-200 pt-4 flex justify-between items-center text-sm font-black bg-slate-50 p-3 rounded-lg border border-slate-100">
                   <span className="text-blue-700">Net Payable Amount (ನಿವ್ವಳ ಪಾವತಿ):</span>
                   <span className="text-emerald-700 text-base">₹{Number(bill.net_payable_amount || bill.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                 </div>
@@ -219,7 +225,7 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 text-xs flex justify-between items-center font-bold bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-slate-650">Net Payable Amount (ನಿವ್ವಳ ಪಾವತಿ):</span>
+                <span className="text-slate-600">Net Payable Amount (ನಿವ್ವಳ ಪಾವತಿ):</span>
                 <span className="text-sm font-black text-slate-900">
                   ₹{Number(bill.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
@@ -266,7 +272,7 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
                       </TableRow>
                     )}
                     <TableRow className="bg-slate-50 hover:bg-slate-50 border-t border-slate-300 font-bold">
-                      <TableCell colSpan={3} className="text-right text-xs uppercase pr-4 font-bold text-slate-650">Gross Amount:</TableCell>
+                      <TableCell colSpan={3} className="text-right text-xs uppercase pr-4 font-bold text-slate-600">Gross Amount:</TableCell>
                       <TableCell className="text-right text-sm font-black text-slate-900 pr-6">
                         ₹{Number(bill.gross_amount || bill.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </TableCell>
@@ -293,7 +299,7 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
                         <p>
                           Bill Date: <span className="font-semibold text-slate-700">{item.bill_date ? new Date(item.bill_date).toLocaleDateString("en-IN") : ""}</span>
                         </p>
-                        <div className="pt-1 text-slate-650 text-xs font-medium leading-relaxed bg-slate-50/50 p-2 rounded border border-slate-100">
+                        <div className="pt-1 text-slate-600 text-xs font-medium leading-relaxed bg-slate-50/50 p-2 rounded border border-slate-100">
                           {item.purpose}
                         </div>
                       </div>
@@ -305,7 +311,7 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
                 
                 {/* Mobile Total Row */}
                 <div className="bg-slate-100 p-4 flex justify-between items-center text-xs font-bold border-t border-slate-200">
-                  <span className="text-slate-650 uppercase">Gross Amount:</span>
+                  <span className="text-slate-600 uppercase">Gross Amount:</span>
                   <span className="text-sm font-black text-slate-900">
                     ₹{Number(bill.gross_amount || bill.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
@@ -323,7 +329,7 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
               </span>
               <span className="flex items-center gap-1.5 font-medium">
                 <User className="h-3.5 w-3.5 shrink-0" />
-                User: {bill.users?.full_name || "Admin"}
+                School: {bill.schools?.school_name_en || "School"}
               </span>
             </CardContent>
           </Card>

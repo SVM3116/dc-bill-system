@@ -158,7 +158,7 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
   const watchedChequeNumber = watch("cheque_number");
 
   useEffect(() => {
-    if (!watchedChequeNumber || watchedChequeNumber.length !== 6) {
+    if (!watchedChequeNumber || watchedChequeNumber.length !== 6 || !userId) {
       if (errors.cheque_number?.type === "duplicate") {
         clearErrors("cheque_number");
       }
@@ -171,7 +171,8 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
         let query = supabase
           .from("dc_bills")
           .select("id")
-          .eq("cheque_number", watchedChequeNumber);
+          .eq("cheque_number", watchedChequeNumber)
+          .eq("school_id", userId);
 
         if (billId) {
           query = query.neq("id", billId);
@@ -197,7 +198,7 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
 
     const timer = setTimeout(checkChequeUniqueness, 300);
     return () => clearTimeout(timer);
-  }, [watchedChequeNumber, billId, supabase, setError, clearErrors, errors.cheque_number?.type]);
+  }, [watchedChequeNumber, billId, supabase, setError, clearErrors, errors.cheque_number?.type, userId]);
 
   // Get current user id
   useEffect(() => {
@@ -212,13 +213,14 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
 
   // Get next sequential DC Bill Number specifically for the selected Financial Year
   useEffect(() => {
-    if (billId) return; // If editing, don't auto-generate
+    if (billId || !userId) return; // If editing or user not loaded, don't generate
     
     const fetchNextBillNumber = async () => {
       try {
         const { data, error } = await supabase
           .from("dc_bills")
           .select("dc_bill_number")
+          .eq("school_id", userId)
           .ilike("dc_bill_number", `%${financialYear}`);
 
         if (error) throw error;
@@ -244,7 +246,7 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
       }
     };
     fetchNextBillNumber();
-  }, [billId, supabase, setValue, financialYear]);
+  }, [billId, supabase, setValue, financialYear, userId]);
   // Setup useFieldArray for items list
   const { fields, append, remove } = useFieldArray({
     control,
@@ -790,7 +792,7 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
                           render={({ field: selectField }) => (
                             <select
                               {...selectField}
-                              className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-slate-350 cursor-pointer"
+                              className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-slate-400 cursor-pointer"
                             >
                               <option value="percentage">Percentage (%)</option>
                               <option value="fixed">Fixed Amount (₹)</option>

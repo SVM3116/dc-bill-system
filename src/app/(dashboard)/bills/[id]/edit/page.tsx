@@ -18,10 +18,16 @@ export default async function EditBillPage({ params }: EditBillPageProps) {
   const supabase = await createClient();
   const financialYear = await getSelectedFinancialYear();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    notFound();
+  }
+
   const { data: bill, error } = await supabase
     .from("dc_bills")
     .select("*, dc_bill_deductions(*)")
     .eq("id", id)
+    .eq("school_id", user.id)
     .single();
 
   if (error || !bill) {

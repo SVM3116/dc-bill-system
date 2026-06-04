@@ -17,11 +17,14 @@ export default async function NewBillPage({ searchParams }: NewBillPageProps) {
   let duplicateData = null;
   if (duplicateFrom) {
     const supabase = await createClient();
-    const { data } = await supabase
-      .from("dc_bills")
-      .select("*, dc_bill_deductions(*)")
-      .eq("id", duplicateFrom)
-      .single();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from("dc_bills")
+        .select("*, dc_bill_deductions(*)")
+        .eq("id", duplicateFrom)
+        .eq("school_id", user.id)
+        .single();
 
     if (data) {
       // Clean up the data for duplication
@@ -39,6 +42,7 @@ export default async function NewBillPage({ searchParams }: NewBillPageProps) {
           deduction_amount: Number(d.deduction_amount) || 0,
         })) : [],
       };
+    }
     }
   }
 

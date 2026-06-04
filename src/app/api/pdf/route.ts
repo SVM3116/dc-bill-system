@@ -371,16 +371,26 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Fetch bill details from database
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    // Fetch bill details from database with schools details
     const { data: bill, error } = await supabase
       .from("dc_bills")
-      .select("*, dc_bill_deductions(*)")
+      .select("*, dc_bill_deductions(*), schools(*)")
       .eq("id", id)
       .single();
 
     if (error || !bill) {
       console.error("Error fetching bill details:", error);
       return new NextResponse("Bill not found", { status: 404 });
+    }
+
+    // Enforce school isolation check
+    if (bill.school_id !== user.id) {
+      return new NextResponse("Access Denied", { status: 403 });
     }
 
     // Resolve paths to font
@@ -575,7 +585,7 @@ export async function GET(request: NextRequest) {
       });
     };
 
-    const drawHeader = (page: any) => {
+    const drawHeader = (page: any, school: any) => {
       const centerX = 297.63; // Centered globally
       
       drawCenteredMixedText(page, "ಕರ್ನಾಟಕ ಸರ್ಕಾರ", {
@@ -598,7 +608,7 @@ export async function GET(request: NextRequest) {
         isBold: true,
       });
 
-      drawCenteredMixedText(page, "ಮೊರಾರ್ಜಿ ದೇಸಾಯಿ ವಸತಿ ಶಾಲೆ (ಹಿಂ.ವ - 48), ಮಾಲೂರು ಟೌನ್", {
+      drawCenteredMixedText(page, school?.school_name_kn || "", {
         centerX,
         y: 738,
         size: 13.5,
@@ -608,7 +618,7 @@ export async function GET(request: NextRequest) {
         isBold: true,
       });
 
-      drawCenteredMixedText(page, "ಮಾಲೂರು ತಾಲ್ಲೂಕು, ಕೋಲಾರ ಜಿಲ್ಲೆ - 563130.", {
+      drawCenteredMixedText(page, school?.school_address_kn || "", {
         centerX,
         y: 718,
         size: 12,
@@ -626,7 +636,7 @@ export async function GET(request: NextRequest) {
         color: rgb(0, 0, 0),
       });
 
-      drawCenteredMixedText(page, `ನಿರ್ವಹಣಾ ಖಾತೆ - ${financialYear}`, {
+      drawCenteredMixedText(page, `${school?.account_type_kn || "ನಿರ್ವಹಣಾ ಖಾತೆ"} - ${financialYear}`, {
         centerX,
         y: 697,
         size: 11.5,
@@ -636,7 +646,7 @@ export async function GET(request: NextRequest) {
         isBold: true,
       });
 
-      drawCenteredMixedText(page, "ಖಾತೆ ಸಂಖ್ಯೆ :- 64076713075", {
+      drawCenteredMixedText(page, `ಖಾತೆ ಸಂಖ್ಯೆ :- ${school?.account_number || ""}`, {
         centerX,
         y: 681,
         size: 11.5,
@@ -646,7 +656,7 @@ export async function GET(request: NextRequest) {
         isBold: true,
       });
 
-      drawCenteredMixedText(page, "ಖಾತೆ ನಿರ್ವಹಣೆ:- ಪ್ರಾಂಶುಪಾಲರು ಮತ್ತು ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳು", {
+      drawCenteredMixedText(page, `ಖಾತೆ ನಿರ್ವಹಣೆ:- ${school?.account_maintained_by_kn || ""}`, {
         centerX,
         y: 665,
         size: 11.5,
@@ -733,7 +743,7 @@ export async function GET(request: NextRequest) {
       drawPageTemplate(page, pageNum, totalPages, isFirstPage);
 
       if (isFirstPage) {
-        drawHeader(page);
+        drawHeader(page, bill.schools);
         drawMetadataGrid(page, bill);
 
         // Section label "ವಿವರಗಳು :-"
@@ -1084,19 +1094,25 @@ export async function GET(request: NextRequest) {
           color: rgb(0.1, 0.1, 0.1),
         });
 
-        // Draw Signatures blocks (District Officer left, Principal right)
+        // Draw Signatures blocks (District Officer left conditionally, Principal right by default)
         const footerY = wordsY - 50;
-        drawMixedText(page, "ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳ ಸಹಿ", {
-          x: 56,
-          y: footerY,
-          size: 11,
-          kannadaFont: customFont,
-          latinFont: latinBoldFont,
-          color: rgb(0, 0, 0),
-          isBold: true,
-        });
+        const school = bill.schools;
+        const showLeftSig = school?.show_left_signature ?? false;
+        const leftSig = school?.left_signature_kn || "ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳ ಸಹಿ";
 
-        const rightSig = "ಪ್ರಾಂಶುಪಾಲರ ಸಹಿ";
+        if (showLeftSig) {
+          drawMixedText(page, leftSig, {
+            x: 56,
+            y: footerY,
+            size: 11,
+            kannadaFont: customFont,
+            latinFont: latinBoldFont,
+            color: rgb(0, 0, 0),
+            isBold: true,
+          });
+        }
+
+        const rightSig = school?.right_signature_kn || "ಪ್ರಾಂಶುಪಾಲರ ಸಹಿ";
         const rightSigWidth = getTextWidth(rightSig, 11, customFont, latinBoldFont);
         drawMixedText(page, rightSig, {
           x: 534 - rightSigWidth,

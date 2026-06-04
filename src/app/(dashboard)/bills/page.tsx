@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BillsFilter } from "@/components/bills-filter";
 import { DeleteBillButton } from "@/components/delete-bill-button";
 import { getSelectedFinancialYear } from "@/lib/financial-year";
+import { redirect } from "next/navigation";
 
 export const revalidate = 0; // Fresh fetches
 
@@ -34,12 +35,18 @@ export default async function BillsPage({ searchParams }: PageProps) {
   const supabase = await createClient();
   const financialYear = await getSelectedFinancialYear();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return redirect("/login");
+  }
+
   // Start building query
   let query = supabase
     .from("dc_bills")
     .select("id, dc_bill_number, cheque_number, cheque_date, payee_name, amount, status, created_at", {
       count: "exact",
-    });
+    })
+    .eq("school_id", user.id);
 
   // Scope results strictly to the selected Financial Year
   query = query.ilike("dc_bill_number", `%${financialYear}`);
