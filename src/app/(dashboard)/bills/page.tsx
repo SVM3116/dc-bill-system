@@ -21,6 +21,7 @@ interface PageProps {
     startDate?: string;
     endDate?: string;
     page?: string;
+    account_type?: string;
   }>;
 }
 
@@ -31,6 +32,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
   const startDate = resolvedSearchParams.startDate || "";
   const endDate = resolvedSearchParams.endDate || "";
   const page = parseInt(resolvedSearchParams.page || "1", 10);
+  const accountType = resolvedSearchParams.account_type || "maintenance";
 
   const supabase = await createClient();
   const financialYear = await getSelectedFinancialYear();
@@ -40,13 +42,17 @@ export default async function BillsPage({ searchParams }: PageProps) {
     return redirect("/login");
   }
 
+  const accountTypeLabelKn = accountType === "salary" ? "ಸಂಬಳ ಖಾತೆ" : "ನಿರ್ವಹಣಾ ಖಾತೆ";
+  const accountTypeLabelEn = accountType === "salary" ? "Salary Account" : "Maintenance Account";
+
   // Start building query
   let query = supabase
     .from("dc_bills")
     .select("id, dc_bill_number, cheque_number, cheque_date, payee_name, amount, status, created_at", {
       count: "exact",
     })
-    .eq("school_id", user.id);
+    .eq("school_id", user.id)
+    .eq("account_type", accountType);
 
   // Scope results strictly to the selected Financial Year
   query = query.ilike("dc_bill_number", `%${financialYear}`);
@@ -112,11 +118,11 @@ export default async function BillsPage({ searchParams }: PageProps) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-black tracking-tight text-slate-800">
-            School DC Bills <span className="text-blue-700 font-bold">({financialYear})</span>
+            {accountTypeLabelEn} Bills <span className="text-blue-700 font-bold">({financialYear})</span>
           </h2>
-          <p className="text-xs text-slate-500">Manage and search school DC bills for Academic Year {financialYear}</p>
+          <p className="text-xs text-slate-500">Manage and search school {accountTypeLabelEn} ({accountTypeLabelKn}) DC bills for Academic Year {financialYear}</p>
         </div>
-        <Link href="/bills/new" className="w-full sm:w-auto">
+        <Link href={`/bills/new?account_type=${accountType}`} className="w-full sm:w-auto">
           <Button className="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 h-10 w-full sm:h-9 sm:w-auto">
             <FilePlus2 className="h-4 w-4" />
             Create DC Bill

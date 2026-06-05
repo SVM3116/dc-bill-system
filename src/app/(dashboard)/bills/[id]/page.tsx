@@ -43,7 +43,7 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
       {/* Action Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3">
-          <Link href="/bills">
+          <Link href={`/bills?account_type=${bill.account_type}`}>
             <Button variant="outline" size="icon" className="h-10 w-10 border-slate-200 hover:bg-slate-50">
               <ArrowLeft className="h-4 w-4" />
             </Button>

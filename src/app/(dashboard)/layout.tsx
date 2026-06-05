@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 import { Building2, FilePlus2, Files, LayoutDashboard, LogOut, User, Menu, X, Code, Settings } from "lucide-react";
 import { toast } from "sonner";
@@ -21,6 +21,95 @@ function getClientFinancialYear(): string {
   }
 }
 
+interface SidebarNavProps {
+  pathname: string;
+  onLinkClick?: () => void;
+}
+
+function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
+  const searchParams = useSearchParams();
+  const currentAccountType = searchParams ? searchParams.get("account_type") : null;
+
+  const renderNavLink = (name: string, href: string, icon: any, isActive: boolean, isSubItem = false) => {
+    const IconComponent = icon;
+    return (
+      <Link
+        key={name}
+        href={href}
+        onClick={onLinkClick}
+        className={`flex items-center gap-3 py-2 text-sm font-medium rounded-md transition-colors ${
+          isSubItem ? "pl-8 text-xs" : "px-3"
+        } ${
+          isActive
+            ? "bg-blue-850 text-white font-bold border-l-4 border-blue-500 bg-slate-800"
+            : "text-slate-350 hover:bg-slate-800 hover:text-white"
+        }`}
+      >
+        <IconComponent className={`${isSubItem ? "h-3.5 w-3.5" : "h-4 w-4"} shrink-0`} />
+        <span>{name}</span>
+      </Link>
+    );
+  };
+
+  return (
+    <>
+      {/* Dashboard */}
+      {renderNavLink("Dashboard", "/dashboard", LayoutDashboard, pathname === "/dashboard")}
+
+      {/* Maintenance Account Section */}
+      <div className="pt-3 pb-1">
+        <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+          Maintenance Account
+        </p>
+        <div className="space-y-1">
+          {renderNavLink(
+            "Create DC Bill",
+            "/bills/new?account_type=maintenance",
+            FilePlus2,
+            pathname === "/bills/new" && currentAccountType === "maintenance",
+            true
+          )}
+          {renderNavLink(
+            "View Bills",
+            "/bills?account_type=maintenance",
+            Files,
+            pathname === "/bills" && currentAccountType === "maintenance",
+            true
+          )}
+        </div>
+      </div>
+
+      {/* Salary Account Section */}
+      <div className="pt-2 pb-1">
+        <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+          Salary Account
+        </p>
+        <div className="space-y-1">
+          {renderNavLink(
+            "Create DC Bill",
+            "/bills/new?account_type=salary",
+            FilePlus2,
+            pathname === "/bills/new" && currentAccountType === "salary",
+            true
+          )}
+          {renderNavLink(
+            "View Bills",
+            "/bills?account_type=salary",
+            Files,
+            pathname === "/bills" && currentAccountType === "salary",
+            true
+          )}
+        </div>
+      </div>
+
+      {/* School Setup */}
+      <div className="pt-3 border-t border-slate-800 mt-2">
+        {renderNavLink("School Setup", "/school-setup", Settings, pathname === "/school-setup")}
+      </div>
+    </>
+  );
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -28,6 +117,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+
   const supabase = useMemo(() => createClient(), []);
   const [userName, setUserName] = useState("Principal");
   const [schoolNameEn, setSchoolNameEn] = useState("School Dashboard");
@@ -96,29 +186,6 @@ export default function DashboardLayout({
     }
   };
 
-  const navItems = [
-    {
-      name: "Dashboard",
-      href: "/dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      name: "Create DC Bill",
-      href: "/bills/new",
-      icon: FilePlus2,
-    },
-    {
-      name: "View All Bills",
-      href: "/bills",
-      icon: Files,
-    },
-    {
-      name: "School Setup",
-      href: "/school-setup",
-      icon: Settings,
-    },
-  ];
-
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans">
       
@@ -137,23 +204,9 @@ export default function DashboardLayout({
 
         {/* Navigation Links */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  isActive
-                    ? "bg-blue-800 text-white"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                }`}
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                {item.name}
-              </Link>
-            );
-          })}
+          <React.Suspense fallback={<div className="text-slate-500 text-xs px-3">Loading menu...</div>}>
+            <SidebarNav pathname={pathname} />
+          </React.Suspense>
         </nav>
 
         {/* Profile and Logout info */}
@@ -210,25 +263,10 @@ export default function DashboardLayout({
             </div>
 
             {/* Navigation Links */}
-            <nav className="flex-1 px-3 py-4 space-y-1">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setIsDrawerOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      isActive
-                        ? "bg-blue-800 text-white"
-                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    {item.name}
-                  </Link>
-                );
-              })}
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+              <React.Suspense fallback={<div className="text-slate-500 text-xs px-3">Loading menu...</div>}>
+                <SidebarNav pathname={pathname} onLinkClick={() => setIsDrawerOpen(false)} />
+              </React.Suspense>
             </nav>
 
             {/* Profile and Logout info */}

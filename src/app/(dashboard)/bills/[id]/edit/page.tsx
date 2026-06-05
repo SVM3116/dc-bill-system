@@ -44,13 +44,20 @@ export default async function EditBillPage({ params }: EditBillPageProps) {
     })) : [],
   };
 
+  const accountLabel = formattedBill.account_type === "salary" ? "Salary Account" : "Maintenance Account";
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight text-slate-800">Edit DC Bill</h2>
-        <p className="text-xs text-slate-500">Modify stored variables for this contingency statement</p>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-800">Edit {accountLabel} DC Bill</h2>
+        <p className="text-xs text-slate-500">Modify stored variables for this {accountLabel} contingency statement</p>
       </div>
-      <BillForm billId={id} initialData={formattedBill} financialYear={financialYear} />
+      <BillForm 
+        billId={id} 
+        initialData={formattedBill} 
+        financialYear={financialYear} 
+        accountType={formattedBill.account_type as "maintenance" | "salary"}
+      />
     </div>
   );
 }

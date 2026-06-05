@@ -636,7 +636,13 @@ export async function GET(request: NextRequest) {
         color: rgb(0, 0, 0),
       });
 
-      drawCenteredMixedText(page, `${school?.account_type_kn || "ನಿರ್ವಹಣಾ ಖಾತೆ"} - ${financialYear}`, {
+      // Determine account type-specific details
+      const isSalary = bill?.account_type === "salary";
+      const accountTypeKn = isSalary ? "ಸಂಬಳ ಖಾತೆ" : "ನಿರ್ವಹಣಾ ಖಾತೆ";
+      const accountNumber = isSalary ? school?.salary_account_number : school?.maintenance_account_number;
+      const accountMaintainedByKn = isSalary ? "ಪ್ರಾಂಶುಪಾಲರು ಮತ್ತು ನಿಲಯಪಾಲಕರು" : "ಪ್ರಾಂಶುಪಾಲರು ಮತ್ತು ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳು";
+
+      drawCenteredMixedText(page, `${accountTypeKn} - ${financialYear}`, {
         centerX,
         y: 697,
         size: 11.5,
@@ -646,7 +652,7 @@ export async function GET(request: NextRequest) {
         isBold: true,
       });
 
-      drawCenteredMixedText(page, `ಖಾತೆ ಸಂಖ್ಯೆ :- ${school?.account_number || ""}`, {
+      drawCenteredMixedText(page, `ಖಾತೆ ಸಂಖ್ಯೆ :- ${accountNumber || ""}`, {
         centerX,
         y: 681,
         size: 11.5,
@@ -656,7 +662,7 @@ export async function GET(request: NextRequest) {
         isBold: true,
       });
 
-      drawCenteredMixedText(page, `ಖಾತೆ ನಿರ್ವಹಣೆ:- ${school?.account_maintained_by_kn || ""}`, {
+      drawCenteredMixedText(page, `ಖಾತೆ ನಿರ್ವಹಣೆ:- ${accountMaintainedByKn}`, {
         centerX,
         y: 665,
         size: 11.5,
@@ -1096,11 +1102,26 @@ export async function GET(request: NextRequest) {
 
         // Draw Signatures blocks (District Officer left conditionally, Principal right by default)
         const footerY = wordsY - 50;
-        const school = bill.schools;
-        const showLeftSig = school?.show_left_signature ?? false;
-        const leftSig = school?.left_signature_kn || "ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳ ಸಹಿ";
+        
+        let showLeftSig = false;
+        let leftSig = "";
+        const rightSig = "ಪ್ರಾಂಶುಪಾಲರ ಸಹಿ";
 
-        if (showLeftSig) {
+        if (bill.account_type === "salary") {
+          showLeftSig = true;
+          leftSig = "ನಿಲಯಪಾಲಕರ ಸಹಿ";
+        } else {
+          // Maintenance Account
+          const netPayable = bill.net_payable_amount !== undefined && bill.net_payable_amount !== null
+            ? Number(bill.net_payable_amount)
+            : Number(bill.amount);
+          if (netPayable > 50000) {
+            showLeftSig = true;
+            leftSig = "ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳ ಸಹಿ";
+          }
+        }
+
+        if (showLeftSig && leftSig) {
           drawMixedText(page, leftSig, {
             x: 56,
             y: footerY,
@@ -1112,7 +1133,6 @@ export async function GET(request: NextRequest) {
           });
         }
 
-        const rightSig = school?.right_signature_kn || "ಪ್ರಾಂಶುಪಾಲರ ಸಹಿ";
         const rightSigWidth = getTextWidth(rightSig, 11, customFont, latinBoldFont);
         drawMixedText(page, rightSig, {
           x: 534 - rightSigWidth,

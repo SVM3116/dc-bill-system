@@ -40,6 +40,7 @@ export async function upsertBill(
     gross_amount: number;
     total_deductions: number;
     net_payable_amount: number;
+    account_type: string;
   },
   deductions: {
     deduction_type: string;

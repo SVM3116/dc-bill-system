@@ -96,15 +96,18 @@ interface BillFormProps {
   initialData?: any; // Initial bill values for Edit mode
   isDuplicate?: boolean; // If true, this is duplicated from another bill
   financialYear?: string; // Selected academic/financial year
+  accountType?: "maintenance" | "salary";
 }
 
-export function BillForm({ billId, initialData, isDuplicate, financialYear = "2026-27" }: BillFormProps) {
+export function BillForm({ billId, initialData, isDuplicate, financialYear = "2026-27", accountType }: BillFormProps) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  const activeAccount = initialData?.account_type || accountType || "maintenance";
 
   useEffect(() => {
     setMounted(true);
@@ -211,7 +214,7 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
     fetchUser();
   }, [supabase]);
 
-  // Get next sequential DC Bill Number specifically for the selected Financial Year
+  // Get next sequential DC Bill Number specifically for the selected Financial Year and Account Type
   useEffect(() => {
     if (billId || !userId) return; // If editing or user not loaded, don't generate
     
@@ -221,6 +224,7 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
           .from("dc_bills")
           .select("dc_bill_number")
           .eq("school_id", userId)
+          .eq("account_type", activeAccount)
           .ilike("dc_bill_number", `%${financialYear}`);
 
         if (error) throw error;
@@ -246,7 +250,7 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
       }
     };
     fetchNextBillNumber();
-  }, [billId, supabase, setValue, financialYear, userId]);
+  }, [billId, supabase, setValue, financialYear, userId, activeAccount]);
   // Setup useFieldArray for items list
   const { fields, append, remove } = useFieldArray({
     control,
@@ -306,6 +310,7 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
         gross_amount: grossAmount,
         total_deductions: totalDeductions,
         net_payable_amount: netPayableAmount,
+        account_type: activeAccount,
       };
 
       const result = await upsertBill(billId, billData, calculatedDeductions);
@@ -322,7 +327,7 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
         );
 
         toast.success(isGenerated ? "PDF generated and bill finalized!" : "Draft saved successfully.");
-        router.push(isGenerated ? `/bills/${returnedId}` : "/bills");
+        router.push(isGenerated ? `/bills/${returnedId}` : `/bills?account_type=${activeAccount}`);
       }
     } catch (err) {
       console.error(err);
@@ -380,11 +385,13 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
       <CardHeader className="border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-4">
         <div>
           <CardTitle className="text-base md:text-lg font-bold text-slate-800">
-            {billId ? "Edit DC Bill Details" : "Create New DC Bill"}
+            {billId 
+              ? `Edit ${activeAccount === "salary" ? "Salary" : "Maintenance"} Account DC Bill Details` 
+              : `Create New ${activeAccount === "salary" ? "Salary" : "Maintenance"} Account DC Bill`}
           </CardTitle>
           <p className="text-[11px] text-slate-500">Fill in the fields exactly as printed on the PDF sheet</p>
         </div>
-        <Link href="/bills" className="w-full sm:w-auto">
+        <Link href={`/bills?account_type=${activeAccount}`} className="w-full sm:w-auto">
           <Button type="button" variant="outline" size="sm" className="border-slate-200 text-slate-600 text-xs flex items-center justify-center gap-1 w-full sm:w-auto h-9">
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to List

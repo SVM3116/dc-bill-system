@@ -14,23 +14,12 @@ import { toast } from "sonner";
 import { Loader2, ArrowRight, ArrowLeft, CheckCircle2, School, Landmark, FileCheck } from "lucide-react";
 
 // Form validation schema
+// Form validation schema
 const setupSchema = z.object({
   schoolNameKn: z.string().min(3, "School Name in Kannada must be at least 3 characters"),
   schoolAddressKn: z.string().min(5, "School Address in Kannada must be at least 5 characters"),
-  accountTypeKn: z.string().min(2, "Account Type in Kannada must be at least 2 characters"),
-  accountNumber: z.string().regex(/^\d{9,18}$/, "Account Number must be between 9 and 18 digits"),
-  accountMaintainedByKn: z.string().min(3, "Account Maintained By details in Kannada are required"),
-  rightSignatureKn: z.string().min(2, "Right Signature in Kannada must be at least 2 characters"),
-  showLeftSignature: z.boolean(),
-  leftSignatureKn: z.string().optional(),
-}).refine((data) => {
-  if (data.showLeftSignature) {
-    return !!data.leftSignatureKn && data.leftSignatureKn.trim().length >= 2;
-  }
-  return true;
-}, {
-  message: "Left Signature in Kannada must be at least 2 characters if enabled",
-  path: ["leftSignatureKn"],
+  maintenanceAccountNumber: z.string().regex(/^\d{9,18}$/, "Maintenance Account Number must be between 9 and 18 digits"),
+  salaryAccountNumber: z.string().regex(/^\d{9,18}$/, "Salary Account Number must be between 9 and 18 digits"),
 });
 
 type SetupFormValues = z.infer<typeof setupSchema>;
@@ -55,12 +44,8 @@ export default function SchoolSetupPage() {
     defaultValues: {
       schoolNameKn: "",
       schoolAddressKn: "",
-      accountTypeKn: "ನಿರ್ವಹಣಾ ಖಾತೆ", // default Kannada account type
-      accountNumber: "",
-      accountMaintainedByKn: "ಪ್ರಾಂಶುಪಾಲರು ಮತ್ತು ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳು", // default account maintained by
-      rightSignatureKn: "ಪ್ರಾಂಶುಪಾಲರ ಸಹಿ",
-      showLeftSignature: false,
-      leftSignatureKn: "ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳ ಸಹಿ",
+      maintenanceAccountNumber: "",
+      salaryAccountNumber: "",
     },
   });
 
@@ -75,7 +60,7 @@ export default function SchoolSetupPage() {
         // Fetch current school config if exists
         const { data: school } = await supabase
           .from("schools")
-          .select("school_name_kn, school_address_kn, account_type_kn, account_number, account_maintained_by_kn, school_profile_completed, right_signature_kn, show_left_signature, left_signature_kn")
+          .select("school_name_kn, school_address_kn, account_number, maintenance_account_number, salary_account_number, school_profile_completed")
           .eq("id", user.id)
           .single();
           
@@ -83,12 +68,8 @@ export default function SchoolSetupPage() {
           reset({
             schoolNameKn: school.school_name_kn || "",
             schoolAddressKn: school.school_address_kn || "",
-            accountTypeKn: school.account_type_kn || "ನಿರ್ವಹಣಾ ಖಾತೆ",
-            accountNumber: school.account_number || "",
-            accountMaintainedByKn: school.account_maintained_by_kn || "ಪ್ರಾಂಶುಪಾಲರು ಮತ್ತು ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳು",
-            rightSignatureKn: school.right_signature_kn || "ಪ್ರಾಂಶುಪಾಲರ ಸಹಿ",
-            showLeftSignature: school.show_left_signature ?? false,
-            leftSignatureKn: school.left_signature_kn || "ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳ ಸಹಿ",
+            maintenanceAccountNumber: school.maintenance_account_number || school.account_number || "",
+            salaryAccountNumber: school.salary_account_number || "",
           });
           
           if (school.school_profile_completed) {
@@ -102,11 +83,11 @@ export default function SchoolSetupPage() {
   }, [supabase, reset]);
 
   const handleNextStep = async () => {
-    let fieldsToValidate: ("schoolNameKn" | "schoolAddressKn" | "accountTypeKn" | "accountNumber" | "accountMaintainedByKn" | "rightSignatureKn" | "showLeftSignature" | "leftSignatureKn")[] = [];
+    let fieldsToValidate: ("schoolNameKn" | "schoolAddressKn" | "maintenanceAccountNumber" | "salaryAccountNumber")[] = [];
     if (step === 1) {
       fieldsToValidate = ["schoolNameKn", "schoolAddressKn"];
     } else if (step === 2) {
-      fieldsToValidate = ["accountTypeKn", "accountNumber", "accountMaintainedByKn", "rightSignatureKn", "showLeftSignature", "leftSignatureKn"];
+      fieldsToValidate = ["maintenanceAccountNumber", "salaryAccountNumber"];
     }
 
     const isValid = await trigger(fieldsToValidate);
@@ -136,12 +117,8 @@ export default function SchoolSetupPage() {
         .update({
           school_name_kn: values.schoolNameKn,
           school_address_kn: values.schoolAddressKn,
-          account_type_kn: values.accountTypeKn,
-          account_number: values.accountNumber,
-          account_maintained_by_kn: values.accountMaintainedByKn,
-          right_signature_kn: values.rightSignatureKn,
-          show_left_signature: values.showLeftSignature,
-          left_signature_kn: values.showLeftSignature ? values.leftSignatureKn : null,
+          maintenance_account_number: values.maintenanceAccountNumber,
+          salary_account_number: values.salaryAccountNumber,
           school_profile_completed: true,
           updated_at: new Date().toISOString(),
         })
@@ -181,7 +158,7 @@ export default function SchoolSetupPage() {
               </CardTitle>
               <CardDescription className="text-slate-500 text-xs mt-0.5">
                 {step === 1 && "Step 1: School Identity Details (Kannada)"}
-                {step === 2 && "Step 2: Bank Account Details (Kannada)"}
+                {step === 2 && "Step 2: Bank Account Numbers"}
                 {step === 3 && "Step 3: Review Configurations"}
               </CardDescription>
             </div>
@@ -231,99 +208,38 @@ export default function SchoolSetupPage() {
             {/* STEP 2: BANK DETAILS */}
             {step === 2 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="accountTypeKn" className="text-slate-700">Account Type (Kannada / ಕನ್ನಡ)</Label>
-                    <Input
-                      id="accountTypeKn"
-                      placeholder="e.g. ನಿರ್ವಹಣಾ ಖಾತೆ"
-                      className={`bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-500 ${errors.accountTypeKn ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                      {...register("accountTypeKn")}
-                    />
-                    {errors.accountTypeKn && (
-                      <p className="text-xs font-semibold text-red-500">{errors.accountTypeKn.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="accountNumber" className="text-slate-700">Account Number (Digits Only)</Label>
-                    <Input
-                      id="accountNumber"
-                      placeholder="e.g. 64076713075"
-                      type="text"
-                      className={`bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-500 ${errors.accountNumber ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                      {...register("accountNumber")}
-                    />
-                    {errors.accountNumber && (
-                      <p className="text-xs font-semibold text-red-500">{errors.accountNumber.message}</p>
-                    )}
-                  </div>
-                </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="accountMaintainedByKn" className="text-slate-700">Account Maintained By (Kannada / ಕನ್ನಡ)</Label>
+                  <Label htmlFor="maintenanceAccountNumber" className="text-slate-700">Maintenance Account Number (Digits Only)</Label>
                   <Input
-                    id="accountMaintainedByKn"
-                    placeholder="e.g. ಪ್ರಾಂಶುಪಾಲರು ಮತ್ತು ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳು"
-                    className={`bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-500 ${errors.accountMaintainedByKn ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    {...register("accountMaintainedByKn")}
+                    id="maintenanceAccountNumber"
+                    placeholder="e.g. 64076713075"
+                    type="text"
+                    className={`bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-500 ${errors.maintenanceAccountNumber ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    {...register("maintenanceAccountNumber")}
                   />
-                  {errors.accountMaintainedByKn && (
-                    <p className="text-xs font-semibold text-red-500">{errors.accountMaintainedByKn.message}</p>
+                  {errors.maintenanceAccountNumber && (
+                    <p className="text-xs font-semibold text-red-500">{errors.maintenanceAccountNumber.message}</p>
                   )}
                   <p className="text-[10px] text-slate-400">
-                    Typically names the official designations (e.g. Principal and District Officer) who sign the bank accounts.
+                    This account will be used for all Maintenance (ನಿರ್ವಹಣಾ) expense payments.
                   </p>
                 </div>
 
-                <div className="border-t border-slate-200 my-4 pt-4 space-y-4">
-                  <h4 className="text-sm font-semibold text-blue-700">PDF Signature Settings</h4>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="rightSignatureKn" className="text-slate-700">Right Signature (Compulsory / Kannada / ಕನ್ನಡ)</Label>
-                    <Input
-                      id="rightSignatureKn"
-                      placeholder="e.g. ಪ್ರಾಂಶುಪಾಲರ ಸಹಿ"
-                      className={`bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-500 ${errors.rightSignatureKn ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                      {...register("rightSignatureKn")}
-                    />
-                    {errors.rightSignatureKn && (
-                      <p className="text-xs font-semibold text-red-500">{errors.rightSignatureKn.message}</p>
-                    )}
-                    <p className="text-[10px] text-slate-400">
-                      This label always prints on the bottom-right side of the PDF footer.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center space-x-2.5 py-1">
-                    <input
-                      type="checkbox"
-                      id="showLeftSignature"
-                      className="h-4 w-4 rounded border-slate-300 bg-white text-blue-600 focus:ring-blue-500 accent-blue-600 cursor-pointer"
-                      {...register("showLeftSignature")}
-                    />
-                    <Label htmlFor="showLeftSignature" className="text-xs text-slate-600 cursor-pointer select-none">
-                      Show secondary signature on the left side of PDF footer
-                    </Label>
-                  </div>
-
-                  {watch("showLeftSignature") && (
-                    <div className="space-y-2 pt-1 animate-fadeIn">
-                      <Label htmlFor="leftSignatureKn" className="text-slate-700">Left Signature (Kannada / ಕನ್ನಡ)</Label>
-                      <Input
-                        id="leftSignatureKn"
-                        placeholder="e.g. ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳ ಸಹಿ"
-                        className={`bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-500 ${errors.leftSignatureKn ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                        {...register("leftSignatureKn")}
-                      />
-                      {errors.leftSignatureKn && (
-                        <p className="text-xs font-semibold text-red-500">{errors.leftSignatureKn.message}</p>
-                      )}
-                      <p className="text-[10px] text-slate-400">
-                        This label prints on the bottom-left side of the PDF footer when enabled.
-                      </p>
-                    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="salaryAccountNumber" className="text-slate-700">Salary Account Number (Digits Only)</Label>
+                  <Input
+                    id="salaryAccountNumber"
+                    placeholder="e.g. 64076713086"
+                    type="text"
+                    className={`bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-500 ${errors.salaryAccountNumber ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    {...register("salaryAccountNumber")}
+                  />
+                  {errors.salaryAccountNumber && (
+                    <p className="text-xs font-semibold text-red-500">{errors.salaryAccountNumber.message}</p>
                   )}
+                  <p className="text-[10px] text-slate-400">
+                    This account will be used for all Salary (ಸಂಬಳ) payments.
+                  </p>
                 </div>
               </div>
             )}
@@ -353,31 +269,13 @@ export default function SchoolSetupPage() {
                     <span className="text-slate-800 font-bold text-right Kannada-text truncate max-w-[280px]">{formValues.schoolAddressKn}</span>
                   </div>
                   <div className="flex justify-between border-b border-slate-100 pb-1.5 gap-4">
-                    <span className="text-slate-500 font-medium">Account Details (KN):</span>
-                    <span className="text-slate-800 font-bold text-right Kannada-text truncate max-w-[280px]">{formValues.accountTypeKn}</span>
+                    <span className="text-slate-500 font-medium">Maintenance Account Number:</span>
+                    <span className="text-slate-800 font-mono font-bold tracking-wider">{formValues.maintenanceAccountNumber}</span>
                   </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-1.5 gap-4">
-                    <span className="text-slate-500 font-medium">Account Number:</span>
-                    <span className="text-slate-800 font-mono font-bold tracking-wider">{formValues.accountNumber}</span>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-slate-500 font-medium">Salary Account Number:</span>
+                    <span className="text-slate-800 font-mono font-bold tracking-wider">{formValues.salaryAccountNumber}</span>
                   </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-1.5 gap-4">
-                    <span className="text-slate-500 font-medium">Maintained By (KN):</span>
-                    <span className="text-slate-800 font-bold text-right Kannada-text truncate max-w-[280px]">{formValues.accountMaintainedByKn}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-1.5 gap-4">
-                    <span className="text-slate-500 font-medium">Right Signature:</span>
-                    <span className="text-slate-800 font-bold text-right Kannada-text truncate max-w-[280px]">{formValues.rightSignatureKn}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-1.5 gap-4">
-                    <span className="text-slate-500 font-medium">Show Left Signature:</span>
-                    <span className="text-slate-800 font-bold">{formValues.showLeftSignature ? "Yes" : "No"}</span>
-                  </div>
-                  {formValues.showLeftSignature && (
-                    <div className="flex justify-between gap-4">
-                      <span className="text-slate-500 font-medium">Left Signature:</span>
-                      <span className="text-slate-800 font-bold text-right Kannada-text truncate max-w-[280px]">{formValues.leftSignatureKn}</span>
-                    </div>
-                  )}
                 </div>
               </div>
             )}

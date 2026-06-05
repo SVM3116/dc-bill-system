@@ -26,6 +26,22 @@ export default async function DashboardPage() {
     .eq("school_id", user.id)
     .ilike("dc_bill_number", `%${financialYear}`);
 
+  // Fetch count of maintenance bills
+  const { count: maintBillsCount } = await supabase
+    .from("dc_bills")
+    .select("*", { count: "exact", head: true })
+    .eq("school_id", user.id)
+    .eq("account_type", "maintenance")
+    .ilike("dc_bill_number", `%${financialYear}`);
+
+  // Fetch count of salary bills
+  const { count: salaryBillsCount } = await supabase
+    .from("dc_bills")
+    .select("*", { count: "exact", head: true })
+    .eq("school_id", user.id)
+    .eq("account_type", "salary")
+    .ilike("dc_bill_number", `%${financialYear}`);
+
   // Fetch count of bills generated this month and filtered by financial year
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
@@ -42,21 +58,24 @@ export default async function DashboardPage() {
   // Fetch total amount processed filtered by financial year
   const { data: amtData, error: amtErr } = await supabase
     .from("dc_bills")
-    .select("amount")
+    .select("amount, account_type")
     .eq("school_id", user.id)
     .eq("status", "generated")
     .ilike("dc_bill_number", `%${financialYear}`);
 
   const totalAmountProcessed = amtData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+  const maintAmountProcessed = amtData?.filter(i => i.account_type === "maintenance").reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+  const salaryAmountProcessed = amtData?.filter(i => i.account_type === "salary").reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
   // Fetch 5 most recent bills filtered by financial year
   const { data: recentBills, error: billsErr } = await supabase
     .from("dc_bills")
-    .select("id, dc_bill_number, cheque_date, payee_name, amount, status")
+    .select("id, dc_bill_number, cheque_date, payee_name, amount, status, account_type")
     .eq("school_id", user.id)
     .ilike("dc_bill_number", `%${financialYear}`)
     .order("created_at", { ascending: false })
     .limit(5);
+
   // Fetch school details to display Principal Name
   const { data: school } = await supabase
     .from("schools")
@@ -75,13 +94,13 @@ export default async function DashboardPage() {
           <p className="text-xs text-slate-500">Quick overview of school DC bills statistics for A.Y. {financialYear}</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <Link href="/bills/new" className="flex-1 sm:flex-initial">
+          <Link href="/bills/new?account_type=maintenance" className="flex-1 sm:flex-initial">
             <Button className="bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 h-10 w-full sm:h-9">
               <FilePlus2 className="h-4 w-4" />
               Create DC Bill
             </Button>
           </Link>
-          <Link href="/bills" className="flex-1 sm:flex-initial">
+          <Link href="/bills?account_type=maintenance" className="flex-1 sm:flex-initial">
             <Button variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold text-xs flex items-center justify-center gap-1.5 h-10 w-full sm:h-9">
               <Files className="h-4 w-4" />
               View All Bills
@@ -99,7 +118,10 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-xl md:text-2xl font-black text-slate-800">{totalBillsCount || 0}</div>
-            <p className="text-[10px] text-slate-400 mt-1">Total recorded bills in {financialYear}</p>
+            <div className="text-[10px] text-slate-500 mt-1 flex justify-between">
+              <span>Maintenance: <strong>{maintBillsCount || 0}</strong></span>
+              <span>Salary: <strong>{salaryBillsCount || 0}</strong></span>
+            </div>
           </CardContent>
         </Card>
 
@@ -125,7 +147,10 @@ export default async function DashboardPage() {
             <div className="text-xl md:text-2xl font-black text-slate-800">
               ₹{totalAmountProcessed.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <p className="text-[10px] text-slate-400 mt-1">Cumulative sum of generated bills ({financialYear})</p>
+            <div className="text-[10px] text-slate-500 mt-1 flex justify-between">
+              <span>Maint: <strong>₹{maintAmountProcessed.toLocaleString("en-IN")}</strong></span>
+              <span>Salary: <strong>₹{salaryAmountProcessed.toLocaleString("en-IN")}</strong></span>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -137,7 +162,7 @@ export default async function DashboardPage() {
               <CardTitle className="text-sm md:text-base font-bold text-slate-800">Recent DC Bills</CardTitle>
               <p className="text-[10px] md:text-[11px] text-slate-500">Showing the latest 5 entries for {financialYear}</p>
             </div>
-            <Link href="/bills" className="text-xs text-blue-700 hover:underline font-bold">
+            <Link href="/bills?account_type=maintenance" className="text-xs text-blue-700 hover:underline font-bold">
               View all
             </Link>
           </CardHeader>
@@ -150,6 +175,7 @@ export default async function DashboardPage() {
                     <TableHeader className="bg-slate-50">
                       <TableRow className="hover:bg-slate-50">
                         <TableHead className="font-semibold text-xs text-slate-700 w-[140px]">DC Bill Number</TableHead>
+                        <TableHead className="font-semibold text-xs text-slate-700 w-[110px]">Account Type</TableHead>
                         <TableHead className="font-semibold text-xs text-slate-700 w-[120px]">Cheque Date</TableHead>
                         <TableHead className="font-semibold text-xs text-slate-700">Payee Name</TableHead>
                         <TableHead className="font-semibold text-xs text-slate-700 text-right w-[140px]">Amount</TableHead>
@@ -161,6 +187,17 @@ export default async function DashboardPage() {
                       {recentBills.map((bill) => (
                         <TableRow key={bill.id} className="hover:bg-slate-50">
                           <TableCell className="font-medium text-xs text-slate-800">{bill.dc_bill_number}</TableCell>
+                          <TableCell className="text-xs text-slate-600">
+                            <span
+                              className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                bill.account_type === "salary"
+                                  ? "bg-purple-50 text-purple-700 border-purple-300"
+                                  : "bg-blue-50 text-blue-700 border-blue-300"
+                              }`}
+                            >
+                              {bill.account_type === "salary" ? "Salary" : "Maintenance"}
+                            </span>
+                          </TableCell>
                           <TableCell className="text-xs text-slate-600">
                             {new Date(bill.cheque_date).toLocaleDateString("en-IN", {
                               day: "2-digit",
@@ -202,7 +239,18 @@ export default async function DashboardPage() {
                     <div key={bill.id} className="p-4 space-y-2 hover:bg-slate-50/50">
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="text-xs font-bold text-slate-800">{bill.dc_bill_number}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-bold text-slate-800">{bill.dc_bill_number}</p>
+                            <span
+                              className={`inline-flex items-center text-[8px] font-bold px-1.5 py-0.2 rounded-full border ${
+                                bill.account_type === "salary"
+                                  ? "bg-purple-50 text-purple-700 border-purple-200"
+                                  : "bg-blue-50 text-blue-700 border-blue-200"
+                              }`}
+                            >
+                              {bill.account_type === "salary" ? "Salary" : "Maint"}
+                            </span>
+                          </div>
                           <p className="text-[10px] text-slate-500">
                             Date: {new Date(bill.cheque_date).toLocaleDateString("en-IN", {
                               day: "2-digit",

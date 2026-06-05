@@ -101,7 +101,12 @@ export function BillsFilter({
     setStatus("all");
     setStartDate("");
     setEndDate("");
-    router.push(pathname);
+    const accountType = searchParams.get("account_type");
+    if (accountType) {
+      router.push(`${pathname}?account_type=${accountType}`);
+    } else {
+      router.push(pathname);
+    }
   };
 
   return (

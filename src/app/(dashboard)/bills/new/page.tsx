@@ -6,12 +6,14 @@ import { getSelectedFinancialYear } from "@/lib/financial-year";
 interface NewBillPageProps {
   searchParams: Promise<{
     duplicateFrom?: string;
+    account_type?: string;
   }>;
 }
 
 export default async function NewBillPage({ searchParams }: NewBillPageProps) {
   const resolvedSearchParams = await searchParams;
   const duplicateFrom = resolvedSearchParams.duplicateFrom;
+  const accountType = resolvedSearchParams.account_type || "maintenance";
   const financialYear = await getSelectedFinancialYear();
 
   let duplicateData = null;
@@ -26,33 +28,41 @@ export default async function NewBillPage({ searchParams }: NewBillPageProps) {
         .eq("school_id", user.id)
         .single();
 
-    if (data) {
-      // Clean up the data for duplication
-      duplicateData = {
-        cheque_number: data.cheque_number,
-        cheque_date: data.cheque_date,
-        payee_name: data.payee_name,
-        payee_address: data.payee_address,
-        amount_in_words: data.amount_in_words,
-        items: data.items,
-        deductions: data.dc_bill_deductions ? data.dc_bill_deductions.map((d: any) => ({
-          deduction_type: d.deduction_type,
-          deduction_mode: d.deduction_mode,
-          deduction_value: Number(d.deduction_value) || 0,
-          deduction_amount: Number(d.deduction_amount) || 0,
-        })) : [],
-      };
-    }
+      if (data) {
+        // Clean up the data for duplication
+        duplicateData = {
+          cheque_number: data.cheque_number,
+          cheque_date: data.cheque_date,
+          payee_name: data.payee_name,
+          payee_address: data.payee_address,
+          amount_in_words: data.amount_in_words,
+          items: data.items,
+          account_type: data.account_type, // duplicate same account type
+          deductions: data.dc_bill_deductions ? data.dc_bill_deductions.map((d: any) => ({
+            deduction_type: d.deduction_type,
+            deduction_mode: d.deduction_mode,
+            deduction_value: Number(d.deduction_value) || 0,
+            deduction_amount: Number(d.deduction_amount) || 0,
+          })) : [],
+        };
+      }
     }
   }
+
+  const accountLabel = accountType === "salary" ? "Salary Account" : "Maintenance Account";
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight text-slate-800">D.C. Bill Entry</h2>
-        <p className="text-xs text-slate-500">Record a new school expense ledger and prepare the contingent sheet</p>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-800">{accountLabel} D.C. Bill Entry</h2>
+        <p className="text-xs text-slate-500">Record a new school expense ledger and prepare the contingent sheet for {accountLabel}</p>
       </div>
-      <BillForm initialData={duplicateData} isDuplicate={!!duplicateFrom} financialYear={financialYear} />
+      <BillForm 
+        initialData={duplicateData} 
+        isDuplicate={!!duplicateFrom} 
+        financialYear={financialYear} 
+        accountType={accountType as "maintenance" | "salary"} 
+      />
     </div>
   );
 }
