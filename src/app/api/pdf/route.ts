@@ -24,6 +24,22 @@ function formatDate(dateStr: string | null | undefined): string {
   }
 }
 
+function formatWatermarkTimestamp(date: Date): string {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const hoursStr = String(hours).padStart(2, "0");
+
+  return `${day}-${month}-${year} ${hoursStr}:${minutes}:${seconds} ${ampm}`;
+}
+
 function wrapText(text: string, maxLength: number): string[] {
   const words = text.split(" ");
   const lines: string[] = [];
@@ -748,6 +764,45 @@ export async function GET(request: NextRequest) {
 
       const page = pdfDoc.addPage([595.27, 841.89]);
       drawPageTemplate(page, pageNum, totalPages, isFirstPage);
+
+      // Draw PDF Footer Watermark in bottom right corner (stacked above page number at y:48)
+      const watermarkDateStr = formatWatermarkTimestamp(new Date());
+      const watermarkL1 = `DC BILL : ${bill.dc_bill_number || ""}`;
+      const watermarkL2 = "Generated On:";
+      const watermarkL3 = watermarkDateStr;
+      
+      const watermarkSize = 7.5;
+      const watermarkColor = rgb(0.6, 0.6, 0.6);
+      const watermarkOpacity = 0.6;
+
+      const wl1Width = latinFont.widthOfTextAtSize(watermarkL1, watermarkSize);
+      const wl2Width = latinFont.widthOfTextAtSize(watermarkL2, watermarkSize);
+      const wl3Width = latinFont.widthOfTextAtSize(watermarkL3, watermarkSize);
+
+      page.drawText(watermarkL1, {
+        x: 539.9 - wl1Width,
+        y: 74,
+        size: watermarkSize,
+        font: latinFont,
+        color: watermarkColor,
+        opacity: watermarkOpacity,
+      });
+      page.drawText(watermarkL2, {
+        x: 539.9 - wl2Width,
+        y: 65,
+        size: watermarkSize,
+        font: latinFont,
+        color: watermarkColor,
+        opacity: watermarkOpacity,
+      });
+      page.drawText(watermarkL3, {
+        x: 539.9 - wl3Width,
+        y: 56,
+        size: watermarkSize,
+        font: latinFont,
+        color: watermarkColor,
+        opacity: watermarkOpacity,
+      });
 
       if (isFirstPage) {
         drawHeader(page, bill.schools);

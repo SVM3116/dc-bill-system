@@ -113,7 +113,7 @@ export function BillsFilter({
     <div className="border border-slate-200 rounded-lg p-4 bg-white shadow-sm space-y-4">
       {/* Search and status controls */}
       <form onSubmit={handleSearchSubmit} className="grid gap-4 grid-cols-1 sm:grid-cols-12 items-end">
-        <div className="sm:col-span-6 space-y-1.5">
+        <div className="sm:col-span-8 space-y-1.5">
           <Label htmlFor="search" className="text-xs font-bold text-slate-700">Search</Label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -144,18 +144,16 @@ export function BillsFilter({
           </select>
         </div>
 
-        <div className="sm:col-span-3 flex gap-2">
-          <Button type="submit" className="flex-1 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs h-12 sm:h-9">
-            Search
-          </Button>
+        <div className="sm:col-span-1 flex justify-end">
           <Button
             type="button"
             variant="outline"
             onClick={handleReset}
-            className="border-slate-200 hover:bg-slate-50 text-slate-600 h-12 sm:h-9 px-3.5"
+            className="w-full border-slate-200 hover:bg-slate-50 text-slate-600 h-12 sm:h-9 px-3 flex items-center justify-center gap-1.5"
             title="Reset Filters"
           >
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw className="h-4 w-4 shrink-0" />
+            <span className="sm:hidden font-semibold text-xs">Reset</span>
           </Button>
         </div>
       </form>

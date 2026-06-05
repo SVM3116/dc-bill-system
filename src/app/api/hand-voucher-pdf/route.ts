@@ -23,6 +23,22 @@ function formatDate(dateStr: string | null | undefined): string {
   }
 }
 
+function formatWatermarkTimestamp(date: Date): string {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const hoursStr = String(hours).padStart(2, "0");
+
+  return `${day}-${month}-${year} ${hoursStr}:${minutes}:${seconds} ${ampm}`;
+}
+
 // Timezone-independent date parser
 function parseDateParts(dateStr: string) {
   const parts = dateStr.split("-");
@@ -440,13 +456,24 @@ export async function GET(req: NextRequest) {
     const acadYear = getAcademicYear(voucher.voucher_date);
     const main = voucher.main_content ? voucher.main_content.trim() : "";
 
+    const isTeacher = voucher.table_layout === "teacher";
     let introText = "";
-    if (voucher.payment_mode === "cheque") {
+    if (isTeacher) {
+      // 2A. Guest Teacher Layout (For both cash and cheque)
       const chequeNum = voucher.cheque_number || "________";
       const chequeDateStr = voucher.cheque_date ? formatDate(voucher.cheque_date) : "__.__.____";
-      introText = `${schoolNameKn} ${acadYear} ನೇ ಸಾಲಿನಲ್ಲಿ ${main} ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ಚೆಕ್ ಸಂಖ್ಯೆ :- ${chequeNum} / ${chequeDateStr} ರ ಮೂಲಕ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
+      introText = `${schoolNameKn}, ಇಲ್ಲಿ ${main} ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ಚೆಕ್ ಸಂಖ್ಯೆ :- ${chequeNum} / ${chequeDateStr} ರ ಮೂಲಕ ಗೌರವ ಧನ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
     } else {
-      introText = `${schoolNameKn} ${acadYear} ನೇ ಸಾಲಿನಲ್ಲಿ ${main} ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ನಿಲಯಪಾಲಕರಿಂದ ನಗದಾಗಿ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
+      // Non-Teacher Layouts
+      if (voucher.payment_mode === "cheque") {
+        // 1A. Introduction paragraph for cheque
+        const chequeNum = voucher.cheque_number || "________";
+        const chequeDateStr = voucher.cheque_date ? formatDate(voucher.cheque_date) : "__.__.____";
+        introText = `${schoolNameKn}, ಇಲ್ಲಿ  ${acadYear}ನೇ ಸಾಲಿನಲ್ಲಿ ${main} ಬಿಲ್ ಬಾಬ್ತು ಹಣವನ್ನು ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ಚೆಕ್ ಸಂಖ್ಯೆ :- ${chequeNum} / ${chequeDateStr} ರ ಮೂಲಕ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
+      } else {
+        // 1B. Introduction paragraph for cash
+        introText = `${schoolNameKn}, ಇಲ್ಲಿ  ${acadYear} ನೇ ಸಾಲಿನಲ್ಲಿ ${main} ಬಿಲ್ ಬಾಬ್ತು ಹಣವನ್ನು ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ನಿಲಯಪಾಲಕರಿಂದ ನಗದಾಗಿ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
+      }
     }
 
     const wrappedIntro = wrapTextByWidth(introText, 495, 11, customFont, latinFont);
@@ -791,7 +818,9 @@ export async function GET(req: NextRequest) {
     yPos -= 20;
 
     const certVar = voucher.certification_content ? voucher.certification_content.trim() : "";
-    const certText = `${schoolNameKn} ${acadYear} ನೇ ಸಾಲಿನಲ್ಲಿ ${certVar} ದೃಢೀಕರಿಸಿದೆ.`;
+    const certText = isTeacher
+      ? `${schoolNameKn}, ಇಲ್ಲಿ  ${acadYear}ನೇ ಸಾಲಿನಲ್ಲಿ ${certVar} ಎಂದು ದೃಢೀಕರಿಸಿದೆ.`
+      : `${schoolNameKn}, ಇಲ್ಲಿಗೆ  ${acadYear}ನೇ ಸಾಲಿನಲ್ಲಿ ${certVar} ಎಂದು ದೃಢೀಕರಿಸಿದೆ.`;
 
     const wrappedCert = wrapTextByWidth(certText, 495, 11, customFont, latinFont);
     for (const line of wrappedCert) {
@@ -818,6 +847,45 @@ export async function GET(req: NextRequest) {
       latinFont: latinBoldFont,
       color: fontColor,
       isBold: true,
+    });
+
+    // Draw PDF Footer Watermark in bottom right corner (y: 50, 59, 68)
+    const watermarkDateStr = formatWatermarkTimestamp(new Date());
+    const watermarkL1 = `HAND VOUCHER : ${voucher.voucher_number || ""}`;
+    const watermarkL2 = "Generated On:";
+    const watermarkL3 = watermarkDateStr;
+    
+    const watermarkSize = 7.5;
+    const watermarkColor = rgb(0.6, 0.6, 0.6);
+    const watermarkOpacity = 0.6;
+
+    const wl1Width = latinFont.widthOfTextAtSize(watermarkL1, watermarkSize);
+    const wl2Width = latinFont.widthOfTextAtSize(watermarkL2, watermarkSize);
+    const wl3Width = latinFont.widthOfTextAtSize(watermarkL3, watermarkSize);
+
+    page.drawText(watermarkL1, {
+      x: 545 - wl1Width,
+      y: 68,
+      size: watermarkSize,
+      font: latinFont,
+      color: watermarkColor,
+      opacity: watermarkOpacity,
+    });
+    page.drawText(watermarkL2, {
+      x: 545 - wl2Width,
+      y: 59,
+      size: watermarkSize,
+      font: latinFont,
+      color: watermarkColor,
+      opacity: watermarkOpacity,
+    });
+    page.drawText(watermarkL3, {
+      x: 545 - wl3Width,
+      y: 50,
+      size: watermarkSize,
+      font: latinFont,
+      color: watermarkColor,
+      opacity: watermarkOpacity,
     });
 
     // Save PDF

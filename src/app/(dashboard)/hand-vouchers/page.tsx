@@ -282,7 +282,7 @@ export default async function HandVouchersPage({ searchParams }: PageProps) {
                       </div>
                     )}
 
-                    <div className="flex justify-end gap-1.5 pt-1 border-t border-slate-100/50">
+                    <div className="flex flex-wrap justify-end gap-1.5 pt-1 border-t border-slate-100/50">
                       <Link href={`/hand-vouchers/${voucher.id}`}>
                         <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-slate-200 text-slate-700">
                           <Eye className="h-3.5 w-3.5 mr-1" /> View
@@ -296,6 +296,11 @@ export default async function HandVouchersPage({ searchParams }: PageProps) {
                       <Link href={`/hand-vouchers/${voucher.id}/edit`}>
                         <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-slate-200 text-slate-700">
                           <Edit className="h-3.5 w-3.5 mr-1" /> Edit
+                        </Button>
+                      </Link>
+                      <Link href={`/hand-vouchers/new?duplicateFrom=${voucher.id}`}>
+                        <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-slate-200 text-slate-700">
+                          <Copy className="h-3.5 w-3.5 mr-1" /> Duplicate
                         </Button>
                       </Link>
                       <DeleteHandVoucherButton

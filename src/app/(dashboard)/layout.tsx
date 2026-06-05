@@ -5,6 +5,39 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 import { Building2, FilePlus2, Files, LayoutDashboard, LogOut, User, Menu, X, Code, Settings } from "lucide-react";
+
+const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={props.className}
+    style={props.style}
+  >
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+    <path d="M9 18c-4.51 2-5-2-7-2" />
+  </svg>
+);
+
+const LinkedinIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={props.className}
+    style={props.style}
+  >
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+    <rect width="4" height="12" x="2" y="9" />
+    <circle cx="4" cy="4" r="2" />
+  </svg>
+);
 import { toast } from "sonner";
 
 function getClientFinancialYear(): string {
@@ -37,15 +70,15 @@ function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
         key={name}
         href={href}
         onClick={onLinkClick}
-        className={`flex items-center gap-3 py-2 text-sm font-medium rounded-md transition-colors ${
+        className={`flex items-center gap-3 py-2 text-sm font-semibold rounded-md transition-all duration-150 ${
           isSubItem ? "pl-8 text-xs" : "px-3"
         } ${
           isActive
-            ? "bg-blue-850 text-white font-bold border-l-4 border-blue-500 bg-slate-800"
-            : "text-slate-350 hover:bg-slate-800 hover:text-white"
+            ? "bg-slate-800 text-white font-black border-l-4 border-blue-500 shadow-inner"
+            : "text-slate-300 hover:bg-slate-800/60 hover:text-white"
         }`}
       >
-        <IconComponent className={`${isSubItem ? "h-3.5 w-3.5" : "h-4 w-4"} shrink-0`} />
+        <IconComponent className={`${isSubItem ? "h-3.5 w-3.5" : "h-4 w-4"} shrink-0 ${isActive ? "text-blue-400" : "text-slate-400"}`} />
         <span>{name}</span>
       </Link>
     );
@@ -53,12 +86,15 @@ function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
 
   return (
     <>
-      {/* Dashboard */}
-      {renderNavLink("Dashboard", "/dashboard", LayoutDashboard, pathname === "/dashboard")}
+      {/* Main Panel Section */}
+      <div className="pb-2">
+        {renderNavLink("Dashboard", "/dashboard", LayoutDashboard, pathname === "/dashboard")}
+      </div>
 
       {/* Maintenance Account Section */}
-      <div className="pt-3 pb-1">
-        <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+      <div className="pt-4 pb-1 border-t border-slate-800/60 mt-1">
+        <p className="px-3 text-xs font-black text-blue-400 tracking-wider uppercase flex items-center gap-1.5 mb-2">
+          <span className="h-1.5 w-1.5 bg-blue-500 rounded-full shrink-0" />
           Maintenance Account
         </p>
         <div className="space-y-1">
@@ -80,8 +116,9 @@ function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
       </div>
 
       {/* Salary Account Section */}
-      <div className="pt-2 pb-1">
-        <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+      <div className="pt-4 pb-1 border-t border-slate-800/60 mt-2">
+        <p className="px-3 text-xs font-black text-purple-400 tracking-wider uppercase flex items-center gap-1.5 mb-2">
+          <span className="h-1.5 w-1.5 bg-purple-500 rounded-full shrink-0" />
           Salary Account
         </p>
         <div className="space-y-1">
@@ -103,8 +140,9 @@ function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
       </div>
 
       {/* Hand Vouchers Section */}
-      <div className="pt-2 pb-1 border-t border-slate-800 mt-2">
-        <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+      <div className="pt-4 pb-1 border-t border-slate-800/60 mt-2">
+        <p className="px-3 text-xs font-black text-emerald-400 tracking-wider uppercase flex items-center gap-1.5 mb-2">
+          <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full shrink-0" />
           Hand Vouchers
         </p>
         <div className="space-y-1">
@@ -125,12 +163,35 @@ function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
         </div>
       </div>
 
-      {/* School Setup */}
-      <div className="pt-3 border-t border-slate-800 mt-2">
-        {renderNavLink("School Setup", "/school-setup", Settings, pathname === "/school-setup")}
+      {/* Administration & Configuration Section */}
+      <div className="pt-4 pb-1 border-t border-slate-800 mt-2">
+        <p className="px-3 text-xs font-black text-amber-400 tracking-wider uppercase flex items-center gap-1.5 mb-2">
+          <span className="h-1.5 w-1.5 bg-amber-500 rounded-full shrink-0" />
+          Administration
+        </p>
+        <div className="space-y-1">
+          {renderNavLink("Cheque Register", "/cheque-register", Files, pathname === "/cheque-register")}
+          {renderNavLink("School Setup", "/school-setup", Settings, pathname === "/school-setup")}
+        </div>
       </div>
     </>
   );
+}
+
+function cleanKannadaText(str: string): string {
+  if (!str) return "";
+  const hasKannada = /[\u0C80-\u0CFF]/.test(str);
+  if (!hasKannada) return str;
+  const cleaned = str.replace(/[a-zA-Z][a-zA-Z0-9\s,().-]*| [a-zA-Z0-9\s,().-]*/g, (match) => {
+    if (/[a-zA-Z]/.test(match)) {
+      return "";
+    }
+    return match;
+  }).trim().replace(/\s+/g, ' ');
+  if (!cleaned || cleaned.replace(/[^\u0C80-\u0CFF]/g, "").length === 0) {
+    return str;
+  }
+  return cleaned;
 }
 
 export default function DashboardLayout({
@@ -354,23 +415,36 @@ export default function DashboardLayout({
         </main>
 
         {/* Developer Attribution Footer */}
-        <footer className="py-4 border-t border-slate-200 bg-white text-center text-xs text-slate-500 shrink-0">
-          <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-2">
-            <p className="flex flex-wrap items-center justify-center gap-1.5">
-              <span>Developed by</span>
-              <Link href="/developer" className="font-bold text-blue-600 hover:text-blue-800 hover:underline">
+        <footer className="py-5 border-t border-slate-200 bg-white text-center text-xs text-slate-500 shrink-0 font-sans">
+          <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col items-center gap-2.5">
+            <p className="text-slate-800 font-extrabold text-sm tracking-tight text-center">
+              {schoolNameKn ? cleanKannadaText(schoolNameKn) : schoolNameEn} {schoolAddressKn ? `- ${cleanKannadaText(schoolAddressKn)}` : ""}
+            </p>
+            
+            <div className="w-16 h-0.5 bg-slate-200 rounded-full" />
+            
+            {/* Developer details shown below */}
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-slate-400 font-semibold text-[11px]">
+              <span className="text-slate-500">Developed by</span>
+              <Link href="/developer" className="font-extrabold text-blue-600 hover:text-blue-800 hover:underline">
                 Manoj Kumar V
               </Link>
-              <span className="text-slate-300">|</span>
+              <div className="h-3 w-[1px] bg-slate-200" />
               <span className="text-slate-500">Email:</span>
-              <a href="mailto:svmmdrpu@gmail.com" className="hover:text-blue-600 hover:underline">svmmdrpu@gmail.com</a>
-              <span className="text-slate-300">|</span>
+              <a href="mailto:svmmdrpu@gmail.com" className="hover:text-blue-600 transition-colors">svmmdrpu@gmail.com</a>
+              <div className="h-3 w-[1px] bg-slate-200" />
               <span className="text-slate-500">Contact:</span>
-              <a href="tel:+917975464020" className="hover:text-blue-600 hover:underline">+91 7975464020</a>
-            </p>
-            <p className="text-center md:text-right w-full md:max-w-xl text-slate-500 mt-1 md:mt-0">
-              {schoolNameKn || schoolNameEn} {schoolAddressKn ? `- ${schoolAddressKn}` : ""}
-            </p>
+              <a href="tel:+917975464020" className="hover:text-blue-600 transition-colors">+91 7975464020</a>
+              <div className="h-3 w-[1px] bg-slate-200" />
+              <div className="flex items-center gap-1.5">
+                <a href="https://github.com/SVM3116" target="_blank" rel="noopener noreferrer" className="p-1 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all border border-slate-200 bg-slate-50/50" title="GitHub">
+                  <GithubIcon className="h-3.5 w-3.5" />
+                </a>
+                <a href="https://www.linkedin.com/in/manoj-kumar-v-svm/" target="_blank" rel="noopener noreferrer" className="p-1 rounded-full text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all border border-slate-200 bg-slate-50/50" title="LinkedIn">
+                  <LinkedinIcon className="h-3.5 w-3.5" />
+                </a>
+              </div>
+            </div>
           </div>
         </footer>
       </div>

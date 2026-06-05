@@ -9,6 +9,7 @@ import { BillsFilter } from "@/components/bills-filter";
 import { DeleteBillButton } from "@/components/delete-bill-button";
 import { getSelectedFinancialYear } from "@/lib/financial-year";
 import { redirect } from "next/navigation";
+import { BulkDownloadDialog } from "@/components/bulk-download-dialog";
 
 export const revalidate = 0; // Fresh fetches
 
@@ -122,12 +123,15 @@ export default async function BillsPage({ searchParams }: PageProps) {
           </h2>
           <p className="text-xs text-slate-500">Manage and search school {accountTypeLabelEn} ({accountTypeLabelKn}) DC bills for Academic Year {financialYear}</p>
         </div>
-        <Link href={`/bills/new?account_type=${accountType}`} className="w-full sm:w-auto">
-          <Button className="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 h-10 w-full sm:h-9 sm:w-auto">
-            <FilePlus2 className="h-4 w-4" />
-            Create DC Bill
-          </Button>
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <BulkDownloadDialog />
+          <Link href={`/bills/new?account_type=${accountType}`} className="w-full sm:w-auto">
+            <Button className="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 h-10 w-full sm:h-9 sm:w-auto">
+              <FilePlus2 className="h-4 w-4" />
+              Create DC Bill
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filter Component (Client Side Interactivity) */}

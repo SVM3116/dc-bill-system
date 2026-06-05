@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { useForm, useFieldArray, Controller, useWatch } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Save, FileCheck, ArrowLeft } from "lucide-react";
@@ -162,10 +162,32 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
   const watchedMainContent = watch("main_content");
   const watchedCertContent = watch("certification_content");
   const watchedLayout = watch("table_layout");
-  const watchedItems = useWatch({
-    control,
-    name: "items",
-  });
+  const watchedItems = watch("items") || [];
+
+  // Dynamic calculation helper for quantities and rates
+  const handleAmountCalc = (index: number, updatedField?: "quantity" | "quantity_kg" | "rate", updatedValue?: any) => {
+    const currentQtyKg = updatedField === "quantity_kg" ? updatedValue : getValues(`items.${index}.quantity_kg`);
+    const currentQty = updatedField === "quantity" ? updatedValue : getValues(`items.${index}.quantity`);
+    const currentRate = updatedField === "rate" ? updatedValue : getValues(`items.${index}.rate`);
+
+    let expectedAmount = 0;
+    if (watchedLayout === "milling") {
+      const qty = Number(currentQtyKg) || 0;
+      const rate = parseFloat(currentRate || "") || 0;
+      expectedAmount = qty * rate;
+    } else if (watchedLayout === "labor") {
+      const qty = parseFloat(currentQty || "") || 0;
+      const rate = parseFloat(currentRate || "") || 0;
+      expectedAmount = qty * rate;
+    } else {
+      return;
+    }
+
+    setValue(`items.${index}.amount`, expectedAmount, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
 
   // Fetch school details
   useEffect(() => {
@@ -229,41 +251,71 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
   // Auto-calculated text previews
   const introPreviewText = useMemo(() => {
     const main = watchedMainContent ? watchedMainContent.trim() : "ಅತಿಥಿ ಶಿಕ್ಷಕರಾಗಿ ಕರ್ತವ್ಯ ನಿರ್ವಹಿಸಿ";
+    const isTeacher = watchedLayout === "teacher";
     const chequeNum = watchedChequeNum ? watchedChequeNum.trim() : "________";
     const chequeDateStr = watchedChequeDate ? formatDate(watchedChequeDate) : "__.__.____";
 
-    if (watchedMode === "cheque") {
-      return `${schoolNameKn} ${academicYear} ನೇ ಸಾಲಿನಲ್ಲಿ ${main} ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ಚೆಕ್ ಸಂಖ್ಯೆ :- ${chequeNum} / ${chequeDateStr} ರ ಮೂಲಕ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
+    if (isTeacher) {
+      // 2A. Guest Teacher Layout (For both cash and cheque)
+      return `${schoolNameKn}, ಇಲ್ಲಿ ${main} ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ಚೆಕ್ ಸಂಖ್ಯೆ :- ${chequeNum} / ${chequeDateStr} ರ ಮೂಲಕ ಗೌರವ ಧನ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
     } else {
-      return `${schoolNameKn} ${academicYear} ನೇ ಸಾಲಿನಲ್ಲಿ ${main} ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ನಿಲಯಪಾಲಕರಿಂದ ನಗದಾಗಿ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
+      // Non-Teacher Layouts
+      if (watchedMode === "cheque") {
+        // 1A. Introduction paragraph for cheque
+        return `${schoolNameKn}, ಇಲ್ಲಿ  ${academicYear}ನೇ ಸಾಲಿನಲ್ಲಿ ${main} ಬಿಲ್ ಬಾಬ್ತು ಹಣವನ್ನು ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ಚೆಕ್ ಸಂಖ್ಯೆ :- ${chequeNum} / ${chequeDateStr} ರ ಮೂಲಕ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
+      } else {
+        // 1B. Introduction paragraph for cash
+        return `${schoolNameKn}, ಇಲ್ಲಿ  ${academicYear} ನೇ ಸಾಲಿನಲ್ಲಿ ${main} ಬಿಲ್ ಬಾಬ್ತು ಹಣವನ್ನು ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ನಿಲಯಪಾಲಕರಿಂದ ನಗದಾಗಿ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
+      }
     }
-  }, [watchedMainContent, watchedMode, watchedChequeNum, watchedChequeDate, schoolNameKn, academicYear]);
+  }, [watchedMainContent, watchedMode, watchedChequeNum, watchedChequeDate, schoolNameKn, academicYear, watchedLayout]);
 
   const certPreviewText = useMemo(() => {
     const cert = watchedCertContent ? watchedCertContent.trim() : "ಅತಿಥಿ ಶಿಕ್ಷಕರಾಗಿ ಕರ್ತವ್ಯ ನಿರ್ವಹಿಸಿರುತ್ತಾರೆಂದು";
-    return `ದೃಢೀಕರಣ\n${schoolNameKn} ${academicYear} ನೇ ಸಾಲಿನಲ್ಲಿ ${cert} ದೃಢೀಕರಿಸಿದೆ.`;
-  }, [watchedCertContent, schoolNameKn, academicYear]);
+    const isTeacher = watchedLayout === "teacher";
 
-  // Live item amount calculations for Milling and Labor layouts
-  const handleItemCalculation = (index: number) => {
-    const items = getValues("items") || [];
-    const item = items[index];
-    if (!item) return;
-
-    if (watchedLayout === "milling") {
-      const qty = Number(item.quantity_kg) || 0;
-      const rate = parseFloat(item.rate || "") || 0;
-      if (qty > 0 && rate > 0) {
-        setValue(`items.${index}.amount`, qty * rate, { shouldDirty: true, shouldValidate: true });
-      }
-    } else if (watchedLayout === "labor") {
-      const qty = parseFloat(item.quantity || "") || 0;
-      const rate = parseFloat(item.rate || "") || 0;
-      if (qty > 0 && rate > 0) {
-        setValue(`items.${index}.amount`, qty * rate, { shouldDirty: true, shouldValidate: true });
-      }
+    if (isTeacher) {
+      // 2B. Certification for Guest Teacher
+      return `ದೃಢೀಕರಣ\n${schoolNameKn}, ಇಲ್ಲಿ  ${academicYear}ನೇ ಸಾಲಿನಲ್ಲಿ ${cert} ಎಂದು ದೃಢೀಕರಿಸಿದೆ.`;
+    } else {
+      // 1C. Certification for others
+      return `ದೃಢೀಕರಣ\n${schoolNameKn}, ಇಲ್ಲಿಗೆ  ${academicYear}ನೇ ಸಾಲಿನಲ್ಲಿ ${cert} ಎಂದು ದೃಢೀಕರಿಸಿದೆ.`;
     }
-  };
+  }, [watchedCertContent, schoolNameKn, academicYear, watchedLayout]);
+
+  // Automatic calculation of item amount based on rate and qty
+  useEffect(() => {
+    if (!watchedItems) return;
+    console.log("--- useEffect calc run ---");
+    console.log("watchedLayout:", watchedLayout);
+    console.log("watchedItems:", JSON.stringify(watchedItems));
+    watchedItems.forEach((item: any, index: number) => {
+      let expectedAmount = Number(item.amount) || 0;
+      if (watchedLayout === "milling") {
+        const qty = Number(item.quantity_kg) || 0;
+        const rate = parseFloat(item.rate || "") || 0;
+        expectedAmount = qty * rate;
+        console.log(`[milling] index=${index} qty=${qty} rate=${rate} expectedAmount=${expectedAmount} currentAmount=${item.amount}`);
+      } else if (watchedLayout === "labor") {
+        const qty = parseFloat(item.quantity || "") || 0;
+        const rate = parseFloat(item.rate || "") || 0;
+        expectedAmount = qty * rate;
+        console.log(`[labor] index=${index} qty=${qty} rate=${rate} expectedAmount=${expectedAmount} currentAmount=${item.amount}`);
+      } else {
+        console.log(`[other] index=${index} return`);
+        return;
+      }
+
+      // Only update form value if it differs to prevent infinite loops
+      if (Math.abs((Number(item.amount) || 0) - expectedAmount) > 0.001) {
+        console.log(`[update] index=${index} setting amount to ${expectedAmount}`);
+        setValue(`items.${index}.amount`, expectedAmount, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      }
+    });
+  }, [watchedItems, watchedLayout, setValue]);
 
   const onSubmit = async (values: HandVoucherFormValues) => {
     setLoading(true);
@@ -418,24 +470,6 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
             </p>
           </div>
         </div>
-        
-        <Button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs px-4 h-9 flex items-center gap-1.5"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="h-3.5 w-3.5" />
-              Save Voucher
-            </>
-          )}
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -737,21 +771,25 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
                             <Input
                               type="number"
                               step="any"
-                              {...register(`items.${index}.quantity_kg` as const, {
-                                onChange: () => handleItemCalculation(index)
-                              })}
+                              {...register(`items.${index}.quantity_kg` as const)}
                               placeholder="Kg"
                               className="h-8 text-xs"
+                              onChange={(e) => {
+                                register(`items.${index}.quantity_kg` as const).onChange(e);
+                                handleAmountCalc(index, "quantity_kg", e.target.value);
+                              }}
                             />
                           </TableCell>
                           <TableCell>
                             <Input
                               type="text"
-                              {...register(`items.${index}.rate` as const, {
-                                onChange: () => handleItemCalculation(index)
-                              })}
+                              {...register(`items.${index}.rate` as const)}
                               placeholder="Rate"
                               className="h-8 text-xs"
+                              onChange={(e) => {
+                                register(`items.${index}.rate` as const).onChange(e);
+                                handleAmountCalc(index, "rate", e.target.value);
+                              }}
                             />
                           </TableCell>
                         </>
@@ -765,21 +803,25 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
                           <TableCell>
                             <Input
                               type="text"
-                              {...register(`items.${index}.quantity` as const, {
-                                onChange: () => handleItemCalculation(index)
-                              })}
+                              {...register(`items.${index}.quantity` as const)}
                               placeholder="5 ಜನ, 1"
                               className="h-8 text-xs font-nudi"
+                              onChange={(e) => {
+                                register(`items.${index}.quantity` as const).onChange(e);
+                                handleAmountCalc(index, "quantity", e.target.value);
+                              }}
                             />
                           </TableCell>
                           <TableCell>
                             <Input
                               type="text"
-                              {...register(`items.${index}.rate` as const, {
-                                onChange: () => handleItemCalculation(index)
-                              })}
+                              {...register(`items.${index}.rate` as const)}
                               placeholder="500/-"
                               className="h-8 text-xs font-nudi"
+                              onChange={(e) => {
+                                register(`items.${index}.rate` as const).onChange(e);
+                                handleAmountCalc(index, "rate", e.target.value);
+                              }}
                             />
                           </TableCell>
                         </>
@@ -801,8 +843,13 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
                         <Input
                           type="number"
                           step="any"
+                          readOnly={watchedLayout === "milling" || watchedLayout === "labor"}
                           {...register(`items.${index}.amount` as const)}
-                          className="h-8 text-xs font-bold text-right"
+                          className={`h-8 text-xs font-bold text-right ${
+                            watchedLayout === "milling" || watchedLayout === "labor"
+                              ? "bg-slate-50 cursor-not-allowed focus-visible:ring-0 focus-visible:ring-offset-0"
+                              : ""
+                          }`}
                         />
                       </TableCell>
 
@@ -918,22 +965,26 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
                             <Input
                               type="number"
                               step="any"
-                              {...register(`items.${index}.quantity_kg` as const, {
-                                onChange: () => handleItemCalculation(index)
-                              })}
+                              {...register(`items.${index}.quantity_kg` as const)}
                               placeholder="Kg"
                               className="h-9 text-xs mt-1 bg-white"
+                              onChange={(e) => {
+                                register(`items.${index}.quantity_kg` as const).onChange(e);
+                                handleAmountCalc(index, "quantity_kg", e.target.value);
+                              }}
                             />
                           </div>
                           <div>
                             <Label className="text-[10px] font-semibold text-slate-500">Rate</Label>
                             <Input
                               type="text"
-                              {...register(`items.${index}.rate` as const, {
-                                onChange: () => handleItemCalculation(index)
-                              })}
+                              {...register(`items.${index}.rate` as const)}
                               placeholder="Rate"
                               className="h-9 text-xs mt-1 bg-white"
+                              onChange={(e) => {
+                                register(`items.${index}.rate` as const).onChange(e);
+                                handleAmountCalc(index, "rate", e.target.value);
+                              }}
                             />
                           </div>
                         </div>
@@ -953,22 +1004,26 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
                             <Label className="text-[10px] font-semibold text-slate-500">Qty/People</Label>
                             <Input
                               type="text"
-                              {...register(`items.${index}.quantity` as const, {
-                                onChange: () => handleItemCalculation(index)
-                              })}
+                              {...register(`items.${index}.quantity` as const)}
                               placeholder="5 ಜನ, 1"
                               className="h-9 text-xs font-nudi mt-1 bg-white"
+                              onChange={(e) => {
+                                register(`items.${index}.quantity` as const).onChange(e);
+                                handleAmountCalc(index, "quantity", e.target.value);
+                              }}
                             />
                           </div>
                           <div>
                             <Label className="text-[10px] font-semibold text-slate-500">Rate</Label>
                             <Input
                               type="text"
-                              {...register(`items.${index}.rate` as const, {
-                                onChange: () => handleItemCalculation(index)
-                              })}
+                              {...register(`items.${index}.rate` as const)}
                               placeholder="500/-"
                               className="h-9 text-xs font-nudi mt-1 bg-white"
+                              onChange={(e) => {
+                                register(`items.${index}.rate` as const).onChange(e);
+                                handleAmountCalc(index, "rate", e.target.value);
+                              }}
                             />
                           </div>
                         </div>
@@ -992,8 +1047,13 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
                         <Input
                           type="number"
                           step="any"
+                          readOnly={watchedLayout === "milling" || watchedLayout === "labor"}
                           {...register(`items.${index}.amount` as const)}
-                          className="h-9 text-xs font-bold mt-1 bg-white"
+                          className={`h-9 text-xs font-bold mt-1 ${
+                            watchedLayout === "milling" || watchedLayout === "labor"
+                              ? "bg-slate-50 cursor-not-allowed focus-visible:ring-0 focus-visible:ring-offset-0"
+                              : "bg-white"
+                          }`}
                         />
                       </div>
                       {(watchedLayout === "teacher" || watchedLayout === "labor" || watchedLayout === "gas") && (
@@ -1033,6 +1093,25 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
             </div>
           </div>
         </CardContent>
+        <CardFooter className="border-t border-slate-150 p-4 sm:p-5 flex justify-end bg-slate-50/50">
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full sm:w-auto bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs px-5 h-10 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                Save Voucher
+              </>
+            )}
+          </Button>
+        </CardFooter>
       </Card>
     </form>
   );

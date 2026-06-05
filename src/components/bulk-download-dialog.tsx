@@ -1,0 +1,243 @@
+"use client";
+
+import React, { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Download, Loader2, Calendar, Archive, FileText, CheckCircle2, AlertTriangle } from "lucide-react";
+import { getBulkDownloadDocumentIds } from "@/app/actions/bulk-download-actions";
+import JSZip from "jszip";
+import { toast } from "sonner";
+
+export function BulkDownloadDialog() {
+  const [open, setOpen] = useState(false);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [accountType, setAccountType] = useState<"all" | "maintenance" | "salary">("all");
+  const [downloadType, setDownloadType] = useState<"dc_bills" | "hand_vouchers" | "combined">("combined");
+
+  // Download states
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [progressText, setProgressText] = useState("");
+  const [progressPercent, setProgressPercent] = useState(0);
+
+  const handleStartDownload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsDownloading(true);
+    setProgressText("Querying database for documents...");
+    setProgressPercent(5);
+
+    try {
+      const response = await getBulkDownloadDocumentIds(fromDate, toDate, accountType, downloadType);
+      if (!response.success) {
+        toast.error(response.error || "Failed to query documents.");
+        setIsDownloading(false);
+        return;
+      }
+
+      const docs = response.documents;
+      if (docs.length === 0) {
+        toast.warning("No generated documents found for the selected filters.");
+        setIsDownloading(false);
+        return;
+      }
+
+      setProgressText(`Found ${docs.length} document(s). Preparing download...`);
+      setProgressPercent(10);
+
+      const zip = new JSZip();
+
+      // Download each PDF sequentially to prevent timeouts and trace progress
+      for (let i = 0; i < docs.length; i++) {
+        const doc = docs[i];
+        const currentNum = i + 1;
+        setProgressText(`Downloading document ${currentNum} of ${docs.length}: ${doc.number}`);
+        const currentPercent = Math.min(10 + Math.floor((currentNum / docs.length) * 80), 90);
+        setProgressPercent(currentPercent);
+
+        const apiEndpoint = doc.type === "dc_bill" ? "/api/pdf" : "/api/hand-voucher-pdf";
+        const fetchUrl = `${apiEndpoint}?id=${doc.id}&download=true`;
+
+        try {
+          const res = await fetch(fetchUrl);
+          if (!res.ok) {
+            throw new Error(`HTTP error ${res.status}`);
+          }
+          const blob = await res.blob();
+          const cleanNum = doc.number.replace(/[^a-zA-Z0-9-]/g, "_");
+          const filename = doc.type === "dc_bill" 
+            ? `DC_Bill_${cleanNum}.pdf` 
+            : `Hand_Voucher_${cleanNum}.pdf`;
+
+          zip.file(filename, blob);
+        } catch (fetchErr) {
+          console.error(`Failed to fetch document ${doc.number}:`, fetchErr);
+          toast.error(`Failed to download ${doc.number}, skipping.`);
+        }
+      }
+
+      setProgressText("Generating ZIP archive... Please wait.");
+      setProgressPercent(95);
+
+      const zipContent = await zip.generateAsync({ type: "blob" });
+      const downloadUrl = URL.createObjectURL(zipContent);
+
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      const typeLabel = downloadType === "combined" 
+        ? "Documents" 
+        : downloadType === "dc_bills" 
+        ? "DC_Bills" 
+        : "Hand_Vouchers";
+      a.download = `Bulk_${typeLabel}_${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+
+      setProgressPercent(100);
+      setProgressText("ZIP download started successfully!");
+      toast.success(`Bundled and downloaded ${docs.length} documents!`);
+
+      setTimeout(() => {
+        setIsDownloading(false);
+        setOpen(false);
+        // Clear progress
+        setProgressPercent(0);
+        setProgressText("");
+      }, 1000);
+
+    } catch (err: any) {
+      console.error("Bulk download failed:", err);
+      toast.error(err.message || "An unexpected error occurred during zip bundling.");
+      setIsDownloading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(val) => { if (!isDownloading) setOpen(val); }}>
+      <DialogTrigger
+        render={
+          <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 h-10 sm:h-9">
+            <Download className="h-4 w-4" />
+            Download Documents
+          </Button>
+        }
+      />
+
+      <DialogContent className="sm:max-w-md bg-white border border-slate-200 p-6 rounded-lg max-w-[95%]">
+        <DialogHeader className="space-y-1">
+          <DialogTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+            <Archive className="h-5 w-5 text-blue-700" />
+            Bulk Download Documents
+          </DialogTitle>
+          <p className="text-xs text-slate-500">
+            Generate and package DC Bills & Hand Voucher PDFs into a single ZIP archive.
+          </p>
+        </DialogHeader>
+
+        {isDownloading ? (
+          /* Progress State */
+          <div className="py-6 space-y-4 text-center">
+            <div className="flex justify-center">
+              <Loader2 className="h-10 w-10 text-blue-700 animate-spin" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-slate-700">{progressText}</p>
+              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+                <div 
+                  className="bg-blue-700 h-full transition-all duration-300 rounded-full" 
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-bold text-slate-400">{progressPercent}% Completed</span>
+            </div>
+          </div>
+        ) : (
+          /* Filter Form State */
+          <form onSubmit={handleStartDownload} className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-4">
+              {/* From Date */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  From Date
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 px-3 py-2 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[38px]"
+                />
+              </div>
+
+              {/* To Date */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  To Date
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 px-3 py-2 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[38px]"
+                />
+              </div>
+            </div>
+
+            {/* Account Type */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                Account Type
+              </label>
+              <select
+                value={accountType}
+                onChange={(e) => setAccountType(e.target.value as any)}
+                className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 px-3 py-2 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[38px]"
+              >
+                <option value="all">All Accounts (Maintenance & Salary)</option>
+                <option value="maintenance">Maintenance Account</option>
+                <option value="salary">Salary Account</option>
+              </select>
+            </div>
+
+            {/* Download Type */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                Download Category
+              </label>
+              <select
+                value={downloadType}
+                onChange={(e) => setDownloadType(e.target.value as any)}
+                className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 px-3 py-2 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[38px]"
+              >
+                <option value="combined">Combined ZIP (DC Bills & Hand Vouchers)</option>
+                <option value="dc_bills">DC Bills ZIP Only</option>
+                <option value="hand_vouchers">Hand Vouchers ZIP Only</option>
+              </select>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setOpen(false)}
+                className="text-slate-500 hover:text-slate-700 font-semibold text-xs h-9"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs h-9"
+              >
+                <Download className="h-4 w-4 mr-1.5" />
+                Generate & ZIP
+              </Button>
+            </div>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -74,12 +74,26 @@ export default async function HandVoucherDetailsPage({ params }: HandVoucherDeta
   const chequeDateStr = voucher.cheque_date ? formatDate(voucher.cheque_date) : "__.__.____";
   const main = voucher.main_content ? voucher.main_content.trim() : "";
   const cert = voucher.certification_content ? voucher.certification_content.trim() : "";
+  const isTeacher = voucher.table_layout === "teacher";
 
-  const introParagraph = voucher.payment_mode === "cheque"
-    ? `${schoolNameKn} ${acadYear} ನೇ ಸಾಲಿನಲ್ಲಿ ${main} ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ಚೆಕ್ ಸಂಖ್ಯೆ :- ${chequeNum} / ${chequeDateStr} ರ ಮೂಲಕ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`
-    : `${schoolNameKn} ${acadYear} ನೇ ಸಾಲಿನಲ್ಲಿ ${main} ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ನಿಲಯಪಾಲಕರಿಂದ ನಗದಾಗಿ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
+  let introParagraph = "";
+  if (isTeacher) {
+    // 2A. Guest Teacher Layout (For both cash and cheque)
+    introParagraph = `${schoolNameKn}, ಇಲ್ಲಿ ${main} ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ಚೆಕ್ ಸಂಖ್ಯೆ :- ${chequeNum} / ${chequeDateStr} ರ ಮೂಲಕ ಗೌರವ ಧನ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
+  } else {
+    // Non-Teacher Layouts
+    if (voucher.payment_mode === "cheque") {
+      // 1A. Introduction paragraph for cheque
+      introParagraph = `${schoolNameKn}, ಇಲ್ಲಿ  ${acadYear}ನೇ ಸಾಲಿನಲ್ಲಿ ${main} ಬಿಲ್ ಬಾಬ್ತು ಹಣವನ್ನು ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ಚೆಕ್ ಸಂಖ್ಯೆ :- ${chequeNum} / ${chequeDateStr} ರ ಮೂಲಕ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
+    } else {
+      // 1B. Introduction paragraph for cash
+      introParagraph = `${schoolNameKn}, ಇಲ್ಲಿ  ${acadYear} ನೇ ಸಾಲಿನಲ್ಲಿ ${main} ಬಿಲ್ ಬಾಬ್ತು ಹಣವನ್ನು ಈ ಕೆಳಗೆ ಸಹಿ ಮಾಡಿರುವ ನಾನು ನಿಲಯಪಾಲಕರಿಂದ ನಗದಾಗಿ ಪಡೆದಿರುತ್ತೇನೆ ಮತ್ತು ಅದರ ವಿವರ ಈ ಕೆಳಗಿನಂತಿದೆ.`;
+    }
+  }
 
-  const certParagraph = `ದೃಢೀಕರಣ: ${schoolNameKn} ${acadYear} ನೇ ಸಾಲಿನಲ್ಲಿ ${cert} ದೃಢೀಕರಿಸಿದೆ.`;
+  const certParagraph = isTeacher
+    ? `${schoolNameKn}, ಇಲ್ಲಿ  ${acadYear}ನೇ ಸಾಲಿನಲ್ಲಿ ${cert} ಎಂದು ದೃಢೀಕರಿಸಿದೆ.`
+    : `${schoolNameKn}, ಇಲ್ಲಿಗೆ  ${acadYear}ನೇ ಸಾಲಿನಲ್ಲಿ ${cert} ಎಂದು ದೃಢೀಕರಿಸಿದೆ.`;
 
   return (
     <div className="space-y-6">
