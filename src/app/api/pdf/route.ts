@@ -78,7 +78,7 @@ function splitTextIntoRuns(text: string): TextRun[] {
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
     const code = char.charCodeAt(0);
-    const isKannada = code >= 0x0C80 && code <= 0x0CFF;
+    const isKannada = (code >= 0x0C80 && code <= 0x0CFF) || code >= 0x0100;
     const isNeutral =
       char === " " ||
       char === "/" ||
@@ -437,15 +437,16 @@ export async function GET(request: NextRequest) {
     const rowHeights = items.map((item) => {
       const subBillDate = formatDate(item.bill_date);
       const billNo = item.bill_number || "";
-      const subBillLabel = billNo + (subBillDate ? ` / ${subBillDate}` : "");
-      
       const particularsText = item.purpose || "";
-      const singleLineWidth = getTextWidth(particularsText, 10.5, customFont, latinFont);
-      
-      const isBillLong = subBillLabel.length > 14;
-      const isParticularsLong = singleLineWidth > maxParticularsWidth;
-      
-      return (isBillLong || isParticularsLong) ? 36 : 22;
+
+      const wrappedBillNo = wrapTextByWidth(billNo, colWidths[1] - 12, 9.5, customFont, latinFont);
+      const billLines = wrappedBillNo.length + (subBillDate ? 1 : 0);
+
+      const wrappedParticulars = wrapTextByWidth(particularsText, colWidths[2] - 12, 9.5, customFont, latinFont);
+      const particularsLines = Math.max(wrappedParticulars.length, 1);
+
+      const maxLines = Math.max(billLines, particularsLines);
+      return maxLines * 12 + 10;
     });
 
     const deductions = (bill.dc_bill_deductions as any[]) || [];
@@ -793,13 +794,12 @@ export async function GET(request: NextRequest) {
       pageData.items.forEach((item, rIdx) => {
         const rowHeight = pageData.heights[rIdx];
         const rowBottomY = currentY - rowHeight;
-        const rowCenterY = currentY - (rowHeight / 2);
 
         // Col 1: Sl No
         const slNoText = String(pageData.startIdx + rIdx + 1);
         drawCenteredMixedText(page, slNoText, {
           centerX: 67.4,
-          y: rowCenterY - 4,
+          y: currentY - 13,
           size: 10.5,
           kannadaFont: customFont,
           latinFont: latinFont,
@@ -809,75 +809,42 @@ export async function GET(request: NextRequest) {
         // Col 2: Bill Number & Date
         const subBillDate = formatDate(item.bill_date);
         const billNo = item.bill_number || "";
-        const subBillLabel = billNo + (subBillDate ? ` / ${subBillDate}` : "");
+        const wrappedBillNo = wrapTextByWidth(billNo, colWidths[1] - 12, 9.5, customFont, latinFont);
+        const col2Lines = [...wrappedBillNo, ...(subBillDate ? [subBillDate] : [])];
 
-        if (rowHeight === 36) {
-          // Renders bill number above date
-          drawMixedText(page, billNo, {
+        col2Lines.forEach((line, idx) => {
+          drawMixedText(page, line, {
             x: 88,
-            y: rowCenterY + 4,
-            size: 10,
+            y: currentY - 13 - (idx * 12),
+            size: 9.5,
             kannadaFont: customFont,
             latinFont: latinFont,
             color: fontColor,
           });
-          drawMixedText(page, subBillDate, {
-            x: 88,
-            y: rowCenterY - 8,
-            size: 10,
-            kannadaFont: customFont,
-            latinFont: latinFont,
-            color: fontColor,
-          });
-        } else {
-          // Single line
-          drawMixedText(page, subBillLabel, {
-            x: 88,
-            y: rowCenterY - 4,
-            size: 10.5,
-            kannadaFont: customFont,
-            latinFont: latinFont,
-            color: fontColor,
-          });
-        }
+        });
 
-        // Col 3: Particulars (Expense details)
+        // Col 3: Particulars
         const particularsText = item.purpose || "";
-        const singleLineWidth = getTextWidth(particularsText, 10.5, customFont, latinFont);
+        const wrappedParticulars = wrapTextByWidth(particularsText, colWidths[2] - 12, 9.5, customFont, latinFont);
+        const col3Lines = wrappedParticulars.length > 0 ? wrappedParticulars : [""];
 
-        if (singleLineWidth <= maxParticularsWidth) {
-          // Single line fitting
-          drawMixedText(page, particularsText, {
+        col3Lines.forEach((line, idx) => {
+          drawMixedText(page, line, {
             x: 198,
-            y: rowCenterY - 4,
-            size: 10.5,
+            y: currentY - 13 - (idx * 12),
+            size: 9.5,
             kannadaFont: customFont,
             latinFont: latinFont,
             color: fontColor,
           });
-        } else {
-          // Wrap text inside Col 3 boundaries
-          const lines = wrapTextByWidth(particularsText, maxParticularsWidth, 9.5, customFont, latinFont);
-          const linesToDraw = lines.slice(0, 2);
-          linesToDraw.forEach((line, lineIdx) => {
-            const lineY = rowCenterY + 4 - lineIdx * 11;
-            drawMixedText(page, line, {
-              x: 198,
-              y: lineY - 3,
-              size: 9.5,
-              kannadaFont: customFont,
-              latinFont: latinFont,
-              color: fontColor,
-            });
-          });
-        }
+        });
 
         // Col 4: Amount
         const valStr = Number(item.amount).toFixed(2);
         const valWidth = latinFont.widthOfTextAtSize(valStr, 10.5);
         page.drawText(valStr, {
           x: 534 - valWidth,
-          y: rowCenterY - 4,
+          y: currentY - 13,
           size: 10.5,
           font: latinFont,
           color: fontColor,

@@ -102,6 +102,29 @@ function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
         </div>
       </div>
 
+      {/* Hand Vouchers Section */}
+      <div className="pt-2 pb-1 border-t border-slate-800 mt-2">
+        <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+          Hand Vouchers
+        </p>
+        <div className="space-y-1">
+          {renderNavLink(
+            "Create Hand Voucher",
+            "/hand-vouchers/new",
+            FilePlus2,
+            pathname === "/hand-vouchers/new",
+            true
+          )}
+          {renderNavLink(
+            "View Hand Vouchers",
+            "/hand-vouchers",
+            Files,
+            pathname === "/hand-vouchers",
+            true
+          )}
+        </div>
+      </div>
+
       {/* School Setup */}
       <div className="pt-3 border-t border-slate-800 mt-2">
         {renderNavLink("School Setup", "/school-setup", Settings, pathname === "/school-setup")}
