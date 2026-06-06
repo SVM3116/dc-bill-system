@@ -33,13 +33,14 @@ export async function GET(request: Request) {
     }
 
     console.log("Database keep-alive ping successful.");
+
     return NextResponse.json({
       success: true,
       message: "Database keep-alive ping successful",
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    console.error("Keep-alive error:", err);
+    console.error("Cron route error:", err);
     return NextResponse.json(
       { success: false, error: (err as Error).message },
       { status: 500 }

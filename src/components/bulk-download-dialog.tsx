@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, Calendar, Archive, FileText, CheckCircle2, AlertTriangle } from "lucide-react";
 import { getBulkDownloadDocumentIds } from "@/app/actions/bulk-download-actions";
-import JSZip from "jszip";
 import { toast } from "sonner";
 
 export function BulkDownloadDialog() {
@@ -41,70 +40,65 @@ export function BulkDownloadDialog() {
         return;
       }
 
-      setProgressText(`Found ${docs.length} document(s). Preparing download...`);
+      setProgressText(`Found ${docs.length} document(s). Initializing background thread...`);
       setProgressPercent(10);
 
-      const zip = new JSZip();
+      const worker = new Worker("/workers/pdf-zip.worker.js");
+      const baseUrl = window.location.origin;
 
-      // Download each PDF sequentially to prevent timeouts and trace progress
-      for (let i = 0; i < docs.length; i++) {
-        const doc = docs[i];
-        const currentNum = i + 1;
-        setProgressText(`Downloading document ${currentNum} of ${docs.length}: ${doc.number}`);
-        const currentPercent = Math.min(10 + Math.floor((currentNum / docs.length) * 80), 90);
-        setProgressPercent(currentPercent);
+      worker.postMessage({ documents: docs, baseUrl });
 
-        const apiEndpoint = doc.type === "dc_bill" ? "/api/pdf" : "/api/hand-voucher-pdf";
-        const fetchUrl = `${apiEndpoint}?id=${doc.id}&download=true`;
-
-        try {
-          const res = await fetch(fetchUrl);
-          if (!res.ok) {
-            throw new Error(`HTTP error ${res.status}`);
+      worker.onmessage = (event) => {
+        const data = event.data;
+        if (data.type === "progress") {
+          if (data.statusText) {
+            setProgressText(data.statusText);
+          } else {
+            setProgressText(`Downloading document ${data.current} of ${data.total}: ${data.number}`);
           }
-          const blob = await res.blob();
-          const cleanNum = doc.number.replace(/[^a-zA-Z0-9-]/g, "_");
-          const filename = doc.type === "dc_bill" 
-            ? `DC_Bill_${cleanNum}.pdf` 
-            : `Hand_Voucher_${cleanNum}.pdf`;
+          setProgressPercent(data.percent);
+        } else if (data.type === "warning") {
+          toast.error(data.message);
+        } else if (data.type === "error") {
+          toast.error(data.error);
+          setIsDownloading(false);
+          worker.terminate();
+        } else if (data.type === "success") {
+          setProgressPercent(100);
+          setProgressText("ZIP download started successfully!");
+          
+          const downloadUrl = URL.createObjectURL(data.blob);
+          const a = document.createElement("a");
+          a.href = downloadUrl;
+          const typeLabel = downloadType === "combined" 
+            ? "Documents" 
+            : downloadType === "dc_bills" 
+            ? "DC_Bills" 
+            : "Hand_Vouchers";
+          a.download = `Bulk_${typeLabel}_${new Date().toISOString().slice(0, 10)}.zip`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(downloadUrl);
 
-          zip.file(filename, blob);
-        } catch (fetchErr) {
-          console.error(`Failed to fetch document ${doc.number}:`, fetchErr);
-          toast.error(`Failed to download ${doc.number}, skipping.`);
+          toast.success(`Bundled and downloaded ${docs.length} documents!`);
+
+          setTimeout(() => {
+            setIsDownloading(false);
+            setOpen(false);
+            setProgressPercent(0);
+            setProgressText("");
+          }, 1000);
+          worker.terminate();
         }
-      }
+      };
 
-      setProgressText("Generating ZIP archive... Please wait.");
-      setProgressPercent(95);
-
-      const zipContent = await zip.generateAsync({ type: "blob" });
-      const downloadUrl = URL.createObjectURL(zipContent);
-
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      const typeLabel = downloadType === "combined" 
-        ? "Documents" 
-        : downloadType === "dc_bills" 
-        ? "DC_Bills" 
-        : "Hand_Vouchers";
-      a.download = `Bulk_${typeLabel}_${new Date().toISOString().slice(0, 10)}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(downloadUrl);
-
-      setProgressPercent(100);
-      setProgressText("ZIP download started successfully!");
-      toast.success(`Bundled and downloaded ${docs.length} documents!`);
-
-      setTimeout(() => {
+      worker.onerror = (err) => {
+        console.error("Worker error:", err);
+        toast.error("Background compiler error.");
         setIsDownloading(false);
-        setOpen(false);
-        // Clear progress
-        setProgressPercent(0);
-        setProgressText("");
-      }, 1000);
+        worker.terminate();
+      };
 
     } catch (err: any) {
       console.error("Bulk download failed:", err);

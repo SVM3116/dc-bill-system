@@ -17,6 +17,7 @@ import Link from "next/link";
 import { convertNumberToWords } from "@/lib/number-to-words";
 import { logActivity } from "@/app/actions/activity-actions";
 import { upsertBill } from "@/app/actions/bill-actions";
+import { getPayees, savePayeeIfNew } from "@/app/actions/payee-actions";
 
 // Zod validation schema for full submission
 const itemSchema = z.object({
@@ -108,6 +109,19 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
   const [isMobile, setIsMobile] = useState(false);
 
   const activeAccount = initialData?.account_type || accountType || "maintenance";
+
+  const [savedPayees, setSavedPayees] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  useEffect(() => {
+    const loadPayeeData = async () => {
+      const res = await getPayees();
+      if (res.success && res.payees) {
+        setSavedPayees(res.payees);
+      }
+    };
+    loadPayeeData();
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -257,6 +271,16 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
     name: "items",
   });
 
+  const watchedPayeeName = watch("payee_name");
+
+  const filteredSuggestions = useMemo(() => {
+    if (!watchedPayeeName) return [];
+    const q = watchedPayeeName.toLowerCase();
+    return savedPayees.filter(
+      (p) => p.name.toLowerCase().includes(q) && p.name.toLowerCase() !== q
+    );
+  }, [watchedPayeeName, savedPayees]);
+
   // Setup useFieldArray for deductions list
   const { fields: deductionFields, append: appendDeduction, remove: removeDeduction } = useFieldArray({
     control,
@@ -317,6 +341,15 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
 
       if (result.success) {
         const returnedId = result.id;
+
+        // Save payee to school directory if new
+        if (values.payee_name && values.payee_address) {
+          try {
+            await savePayeeIfNew(values.payee_name, values.payee_address);
+          } catch (payeeErr) {
+            console.error("Failed to save payee:", payeeErr);
+          }
+        }
 
         // Log action in audit table
         const auditAction = billId ? "edited" : (isDuplicate ? "duplicated" : "generated");
@@ -454,14 +487,36 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
 
           {/* Payee Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <div className="space-y-1">
+            <div className="space-y-1 relative">
               <Label htmlFor="payee_name" className="text-xs font-bold text-slate-700">Payee Name (`ಪಾವತಿದಾರರು`)</Label>
               <Input
                 id="payee_name"
                 placeholder="Enter Payee Name (e.g. Principal / Vendor Name)"
                 className={errors.payee_name ? "border-red-500 focus-visible:ring-red-500 h-10" : "border-slate-200 h-10"}
                 {...register("payee_name")}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                autoComplete="off"
               />
+              {showSuggestions && filteredSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {filteredSuggestions.map((payee) => (
+                    <button
+                      key={payee.id}
+                      type="button"
+                      onMouseDown={() => {
+                        setValue("payee_name", payee.name);
+                        setValue("payee_address", payee.address);
+                        setShowSuggestions(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs font-medium hover:bg-indigo-50 hover:text-indigo-950 transition-colors cursor-pointer border-b border-slate-100 last:border-0"
+                    >
+                      <p className="font-bold text-slate-800">{payee.name}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{payee.address}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
               {errors.payee_name && (
                 <p className="text-[10px] font-semibold text-red-500">{String(errors.payee_name.message)}</p>
               )}

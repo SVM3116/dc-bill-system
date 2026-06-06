@@ -169,13 +169,6 @@ function drawShapedText(
     isBold?: boolean;
   }
 ) {
-  page.drawText(text, {
-    x: -1000,
-    y: -1000,
-    font: options.font,
-    size: options.size,
-  });
-
   page.setFont(options.font);
   const fontKey = page.fontKey;
   const embedder = options.font.embedder;
@@ -186,6 +179,18 @@ function drawShapedText(
   const run = fkFont.layout(text);
   const glyphs = run.glyphs;
   const positions = run.positions;
+
+  // Register the shaped glyphs manually in the subset if subsetting is enabled
+  if (embedder.subset) {
+    for (const glyph of glyphs) {
+      if (!embedder.glyphIdMap.has(glyph.id)) {
+        const subsetGlyphId = embedder.subset.includeGlyph(glyph);
+        embedder.glyphs[subsetGlyphId - 1] = glyph;
+        embedder.glyphIdMap.set(glyph.id, subsetGlyphId);
+      }
+    }
+    embedder.glyphCache?.invalidate?.();
+  }
 
   const operators: any[] = [];
   operators.push(PDFOperator.of("q" as any));
@@ -218,7 +223,10 @@ function drawShapedText(
   for (let i = 0; i < glyphs.length; i++) {
     const glyph = glyphs[i];
     const pos = positions[i];
-    const hex = glyph.id.toString(16).toUpperCase().padStart(4, "0");
+    
+    // Get subsetted glyph ID or fallback to raw glyph.id
+    const glyphId = embedder.subset ? embedder.glyphIdMap.get(glyph.id) : glyph.id;
+    const hex = glyphId.toString(16).toUpperCase().padStart(4, "0");
     const drawX = options.x + (currentX + pos.xOffset) * scale;
     const drawY = options.y + pos.yOffset * scale;
 
@@ -371,7 +379,7 @@ export async function GET(request: NextRequest) {
 
     let customFont: any;
     if (fontBytes) {
-      customFont = await pdfDoc.embedFont(fontBytes);
+      customFont = await pdfDoc.embedFont(fontBytes, { subset: true });
     }
     const latinFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const latinBoldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
