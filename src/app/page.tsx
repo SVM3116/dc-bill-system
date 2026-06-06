@@ -1737,12 +1737,12 @@ export default function Home() {
       </section>
 
       {/* 7. CENTERED FOOTER */}
-      <footer className="border-t border-slate-300 py-10 px-4 md:px-6 bg-slate-50 text-center text-xs text-slate-500 shrink-0 mt-auto font-sans">
+      <footer className="border-t border-slate-200 py-10 px-4 md:px-6 bg-slate-50 text-center text-xs text-slate-500 shrink-0 mt-auto font-sans">
         <div className="max-w-6xl mx-auto w-full flex flex-col items-center gap-5">
           
           {/* Institutional banner */}
           <p className="text-slate-800 font-black text-sm tracking-tight text-center max-w-xl leading-relaxed">
-            Karnataka Residential Educational Institutions Society (KREIS) School Management
+            Karnataka Residential Educational Institutions Society (KREIS)
           </p>
 
           {/* Credit Block */}
