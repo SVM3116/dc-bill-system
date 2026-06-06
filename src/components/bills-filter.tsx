@@ -12,6 +12,8 @@ interface BillsFilterProps {
   initialStatus: string;
   initialStartDate: string;
   initialEndDate: string;
+  initialFromAmount?: string;
+  initialToAmount?: string;
   currentPage: number;
   totalPages: number;
   totalItems: number;
@@ -22,6 +24,8 @@ export function BillsFilter({
   initialStatus,
   initialStartDate,
   initialEndDate,
+  initialFromAmount = "",
+  initialToAmount = "",
   currentPage,
   totalPages,
   totalItems,
@@ -35,6 +39,9 @@ export function BillsFilter({
   const [status, setStatus] = useState(initialStatus);
   const [startDate, setStartDate] = useState(initialStartDate);
   const [endDate, setEndDate] = useState(initialEndDate);
+  const [fromAmount, setFromAmount] = useState(initialFromAmount);
+  const [toAmount, setToAmount] = useState(initialToAmount);
+  const [amountError, setAmountError] = useState<string | null>(null);
 
   // Sync state with url changes
   useEffect(() => {
@@ -42,7 +49,9 @@ export function BillsFilter({
     setStatus(initialStatus);
     setStartDate(initialStartDate);
     setEndDate(initialEndDate);
-  }, [initialSearch, initialStatus, initialStartDate, initialEndDate]);
+    setFromAmount(initialFromAmount);
+    setToAmount(initialToAmount);
+  }, [initialSearch, initialStatus, initialStartDate, initialEndDate, initialFromAmount, initialToAmount]);
 
   // Debounce search query input to trigger live filtering dynamically
   useEffect(() => {
@@ -55,11 +64,41 @@ export function BillsFilter({
     return () => clearTimeout(delayDebounceFn);
   }, [search, initialSearch]);
 
+  // Debounce amount range inputs to trigger live filtering dynamically
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      const minVal = fromAmount.trim();
+      const maxVal = toAmount.trim();
+
+      const minNum = Number(minVal);
+      const maxNum = Number(maxVal);
+
+      const isMinValid = minVal === "" || (!isNaN(minNum) && minNum >= 0);
+      const isMaxValid = maxVal === "" || (!isNaN(maxNum) && maxNum >= 0);
+      const hasError = minVal !== "" && maxVal !== "" && !isNaN(minNum) && !isNaN(maxNum) && minNum > maxNum;
+
+      if (hasError) {
+        setAmountError("Min amount cannot be greater than max");
+      } else {
+        setAmountError(null);
+        if (isMinValid && isMaxValid) {
+          if (fromAmount !== initialFromAmount || toAmount !== initialToAmount) {
+            updateFilters({ fromAmount, toAmount });
+          }
+        }
+      }
+    }, 400); // 400ms debounce delay
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [fromAmount, toAmount, initialFromAmount, initialToAmount]);
+
   const updateFilters = (newFilters: {
     q?: string;
     status?: string;
     startDate?: string;
     endDate?: string;
+    fromAmount?: string;
+    toAmount?: string;
     page?: number;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -79,6 +118,8 @@ export function BillsFilter({
     }
     if (newFilters.startDate !== undefined) applyParam("startDate", newFilters.startDate);
     if (newFilters.endDate !== undefined) applyParam("endDate", newFilters.endDate);
+    if (newFilters.fromAmount !== undefined) applyParam("fromAmount", newFilters.fromAmount);
+    if (newFilters.toAmount !== undefined) applyParam("toAmount", newFilters.toAmount);
     
     // Update page
     if (newFilters.page !== undefined) {
@@ -101,6 +142,9 @@ export function BillsFilter({
     setStatus("all");
     setStartDate("");
     setEndDate("");
+    setFromAmount("");
+    setToAmount("");
+    setAmountError(null);
     const accountType = searchParams.get("account_type");
     if (accountType) {
       router.push(`${pathname}?account_type=${accountType}`);
@@ -160,13 +204,13 @@ export function BillsFilter({
 
       {/* Date Filters and Pagination summary */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pt-3 border-t border-slate-100">
-        {/* Date Ranges */}
+        {/* Date & Amount Ranges */}
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full lg:w-auto">
           <div className="flex items-center justify-between sm:justify-start gap-2 flex-1 sm:flex-initial">
             <span className="text-xs text-slate-500 font-semibold">From Date:</span>
             <input
               type="date"
-              className="h-12 sm:h-8 rounded border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 w-[160px]"
+              className="h-12 sm:h-8 rounded border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 w-[140px]"
               value={startDate}
               onChange={(e) => {
                 setStartDate(e.target.value);
@@ -178,12 +222,35 @@ export function BillsFilter({
             <span className="text-xs text-slate-500 font-semibold">To Date:</span>
             <input
               type="date"
-              className="h-12 sm:h-8 rounded border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 w-[160px]"
+              className="h-12 sm:h-8 rounded border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 w-[140px]"
               value={endDate}
               onChange={(e) => {
                 setEndDate(e.target.value);
                 updateFilters({ endDate: e.target.value });
               }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between sm:justify-start gap-2 flex-1 sm:flex-initial">
+            <span className="text-xs text-slate-500 font-semibold">Min (₹):</span>
+            <Input
+              type="number"
+              min="0"
+              placeholder="Min"
+              className="h-12 sm:h-8 rounded border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 w-[100px]"
+              value={fromAmount}
+              onChange={(e) => setFromAmount(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center justify-between sm:justify-start gap-2 flex-1 sm:flex-initial">
+            <span className="text-xs text-slate-500 font-semibold">Max (₹):</span>
+            <Input
+              type="number"
+              min="0"
+              placeholder="Max"
+              className="h-12 sm:h-8 rounded border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 w-[100px]"
+              value={toAmount}
+              onChange={(e) => setToAmount(e.target.value)}
             />
           </div>
         </div>
@@ -218,6 +285,12 @@ export function BillsFilter({
           </div>
         </div>
       </div>
+
+      {amountError && (
+        <div className="text-[10px] text-red-500 font-bold tracking-tight bg-red-50 border border-red-200 rounded px-2.5 py-1 mt-1 max-w-max">
+          ⚠️ {amountError}
+        </div>
+      )}
     </div>
   );
 }

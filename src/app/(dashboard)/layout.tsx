@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 import { Building2, FilePlus2, Files, LayoutDashboard, LogOut, User, Menu, X, Code, Settings, Mail, Phone } from "lucide-react";
+import { SessionGuard } from "@/components/SessionGuard";
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -74,13 +75,14 @@ function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
   const searchParams = useSearchParams();
   const currentAccountType = searchParams ? searchParams.get("account_type") : null;
 
-  const renderNavLink = (name: string, href: string, icon: any, isActive: boolean, isSubItem = false) => {
+  const renderNavLink = (name: string, href: string, icon: any, isActive: boolean, isSubItem = false, tourId?: string) => {
     const IconComponent = icon;
     return (
       <Link
         key={name}
         href={href}
         onClick={onLinkClick}
+        data-tour={tourId}
         className={`flex items-center gap-3 py-2 text-sm font-semibold rounded-md transition-all duration-150 ${
           isSubItem ? "pl-8 text-xs" : "px-3"
         } ${
@@ -99,7 +101,7 @@ function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
     <>
       {/* Main Panel Section */}
       <div className="pb-2">
-        {renderNavLink("Dashboard", "/dashboard", LayoutDashboard, pathname === "/dashboard")}
+        {renderNavLink("Dashboard", "/dashboard", LayoutDashboard, pathname === "/dashboard", false, "tour-dashboard")}
       </div>
 
       {/* Maintenance Account Section */}
@@ -114,14 +116,16 @@ function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
             "/bills/new?account_type=maintenance",
             FilePlus2,
             pathname === "/bills/new" && currentAccountType === "maintenance",
-            true
+            true,
+            "tour-create-maintenance"
           )}
           {renderNavLink(
             "View Bills",
             "/bills?account_type=maintenance",
             Files,
             pathname === "/bills" && currentAccountType === "maintenance",
-            true
+            true,
+            "tour-view-maintenance"
           )}
         </div>
       </div>
@@ -138,14 +142,16 @@ function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
             "/bills/new?account_type=salary",
             FilePlus2,
             pathname === "/bills/new" && currentAccountType === "salary",
-            true
+            true,
+            "tour-create-salary"
           )}
           {renderNavLink(
             "View Bills",
             "/bills?account_type=salary",
             Files,
             pathname === "/bills" && currentAccountType === "salary",
-            true
+            true,
+            "tour-view-salary"
           )}
         </div>
       </div>
@@ -162,14 +168,16 @@ function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
             "/hand-vouchers/new",
             FilePlus2,
             pathname === "/hand-vouchers/new",
-            true
+            true,
+            "tour-create-voucher"
           )}
           {renderNavLink(
             "View Hand Vouchers",
             "/hand-vouchers",
             Files,
             pathname === "/hand-vouchers",
-            true
+            true,
+            "tour-view-vouchers"
           )}
         </div>
       </div>
@@ -181,8 +189,8 @@ function SidebarNav({ pathname, onLinkClick }: SidebarNavProps) {
           Administration
         </p>
         <div className="space-y-1">
-          {renderNavLink("Cheque Register", "/cheque-register", Files, pathname === "/cheque-register")}
-          {renderNavLink("School Setup", "/school-setup", Settings, pathname === "/school-setup")}
+          {renderNavLink("Cheque Register", "/cheque-register", Files, pathname === "/cheque-register", false, "tour-cheque")}
+          {renderNavLink("School Setup", "/school-setup", Settings, pathname === "/school-setup", false, "tour-setup")}
         </div>
       </div>
     </>
@@ -422,6 +430,7 @@ export default function DashboardLayout({
 
         {/* Content Area */}
         <main className="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full">
+          <SessionGuard />
           {children}
         </main>
 
@@ -429,11 +438,6 @@ export default function DashboardLayout({
         <footer className="border-t border-slate-200 py-10 px-4 md:px-6 bg-slate-50 text-center text-xs text-slate-500 shrink-0 mt-auto font-sans">
           <div className="max-w-6xl mx-auto w-full flex flex-col items-center gap-5">
             
-            {/* Institutional banner */}
-            <p className="text-slate-800 font-black text-sm tracking-tight text-center max-w-xl leading-relaxed">
-              Karnataka Residential Educational Institutions Society (KREIS)
-            </p>
-
             {/* Credit Block */}
             <p className="text-[11px] font-bold text-slate-500 flex items-center justify-center gap-1">
               <span>Made with</span>
@@ -443,8 +447,6 @@ export default function DashboardLayout({
                 Manoj Kumar V
               </Link>
             </p>
-
-            <div className="w-16 h-[1px] bg-slate-300 rounded-full" />
 
             {/* Redesigned Contact & Social Icons Row */}
             <div className="flex items-center justify-center gap-3">

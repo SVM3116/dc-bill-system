@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { updateSchoolProfile } from "@/app/actions/school-actions";
 import { 
   Loader2, 
   ArrowRight, 
@@ -20,7 +21,9 @@ import {
   Landmark, 
   FileCheck, 
   MapPin, 
-  CreditCard 
+  CreditCard,
+  Mail,
+  HelpCircle
 } from "lucide-react";
 
 // Form validation schema
@@ -38,6 +41,7 @@ export default function SchoolSetupPage() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [schoolNameEn, setSchoolNameEn] = useState("");
+  const [regEmail, setRegEmail] = useState("");
   const [isCompletedSetup, setIsCompletedSetup] = useState(false);
   const supabase = createClient();
 
@@ -48,7 +52,7 @@ export default function SchoolSetupPage() {
     watch,
     reset,
     formState: { errors },
-  } = useForm<SetupFormValues>({
+  } = useForm<any>({
     resolver: zodResolver(setupSchema),
     defaultValues: {
       schoolNameKn: "",
@@ -65,11 +69,12 @@ export default function SchoolSetupPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setSchoolNameEn(user.user_metadata?.school_name_en || "your school");
+        setRegEmail(user.email || "");
         
         // Fetch current school config if exists
         const { data: school } = await supabase
           .from("schools")
-          .select("school_name_kn, school_address_kn, account_number, maintenance_account_number, salary_account_number, school_profile_completed")
+          .select("school_name_kn, school_address_kn, maintenance_account_number, salary_account_number, school_profile_completed")
           .eq("id", user.id)
           .single();
           
@@ -77,7 +82,7 @@ export default function SchoolSetupPage() {
           reset({
             schoolNameKn: school.school_name_kn || "",
             schoolAddressKn: school.school_address_kn || "",
-            maintenanceAccountNumber: school.maintenance_account_number || school.account_number || "",
+            maintenanceAccountNumber: school.maintenance_account_number || "",
             salaryAccountNumber: school.salary_account_number || "",
           });
           
@@ -111,37 +116,29 @@ export default function SchoolSetupPage() {
     setStep((prev) => prev - 1);
   };
 
-  const onSubmit = async (values: SetupFormValues) => {
+  const handleReplayTour = () => {
+    localStorage.removeItem("kreis_tour_completed");
+    toast.success("Onboarding tour reset. Redirecting to Dashboard to start the tour...");
+    router.push("/dashboard");
+  };
+
+  const onSubmit = async (values: any) => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("User session not found. Please log in again.");
-        router.push("/login");
-        return;
-      }
+      const result = await updateSchoolProfile({
+        schoolNameKn: values.schoolNameKn,
+        schoolAddressKn: values.schoolAddressKn,
+        maintenanceAccountNumber: values.maintenanceAccountNumber,
+        salaryAccountNumber: values.salaryAccountNumber,
+      });
 
-      const { error } = await supabase
-        .from("schools")
-        .update({
-          school_name_kn: values.schoolNameKn,
-          school_address_kn: values.schoolAddressKn,
-          maintenance_account_number: values.maintenanceAccountNumber,
-          salary_account_number: values.salaryAccountNumber,
-          school_profile_completed: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
-
-      if (error) {
-        toast.error("Failed to save school setup: " + error.message);
-      } else {
+      if (result.success) {
         toast.success("School setup completed successfully!");
         router.push("/dashboard");
         router.refresh();
       }
-    } catch (err) {
-      toast.error("An unexpected error occurred. Please try again.");
+    } catch (err: any) {
+      toast.error(err.message || "An unexpected error occurred. Please try again.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -247,7 +244,7 @@ export default function SchoolSetupPage() {
                     />
                   </div>
                   {errors.schoolNameKn && (
-                    <p className="text-[10px] font-semibold text-red-500">{errors.schoolNameKn.message}</p>
+                    <p className="text-[10px] font-semibold text-red-500">{String(errors.schoolNameKn.message)}</p>
                   )}
                   <p className="text-[10px] text-slate-400 leading-normal">
                     This string will print dynamically in the center header of official DC bills.
@@ -266,12 +263,14 @@ export default function SchoolSetupPage() {
                     />
                   </div>
                   {errors.schoolAddressKn && (
-                    <p className="text-[10px] font-semibold text-red-500">{errors.schoolAddressKn.message}</p>
+                    <p className="text-[10px] font-semibold text-red-500">{String(errors.schoolAddressKn.message)}</p>
                   )}
                   <p className="text-[10px] text-slate-400 leading-normal">
                     Official school street address, sub-district, and pincode written in Kannada script.
                   </p>
                 </div>
+
+
               </div>
             )}
 
@@ -291,7 +290,7 @@ export default function SchoolSetupPage() {
                     />
                   </div>
                   {errors.maintenanceAccountNumber && (
-                    <p className="text-[10px] font-semibold text-red-500">{errors.maintenanceAccountNumber.message}</p>
+                    <p className="text-[10px] font-semibold text-red-500">{String(errors.maintenanceAccountNumber.message)}</p>
                   )}
                   <p className="text-[10px] text-slate-400 leading-normal">
                     This account will be used for all Maintenance (ನಿರ್ವಹಣಾ) expense payments.
@@ -311,7 +310,7 @@ export default function SchoolSetupPage() {
                     />
                   </div>
                   {errors.salaryAccountNumber && (
-                    <p className="text-[10px] font-semibold text-red-500">{errors.salaryAccountNumber.message}</p>
+                    <p className="text-[10px] font-semibold text-red-500">{String(errors.salaryAccountNumber.message)}</p>
                   )}
                   <p className="text-[10px] text-slate-400 leading-normal">
                     This account will be used for all Salary (ಸಂಬಳ) payments.
@@ -345,6 +344,10 @@ export default function SchoolSetupPage() {
                     <span className="text-slate-800 font-bold text-right font-nudi truncate max-w-[280px]">{formValues.schoolAddressKn}</span>
                   </div>
                   <div className="flex justify-between border-b border-slate-100 pb-2 gap-4">
+                    <span className="text-slate-500 font-medium flex items-center gap-1.5"><Mail className="h-3.5 w-3.5 text-slate-400" /> Registered Email:</span>
+                    <span className="text-slate-800 font-bold text-right truncate max-w-[280px]">{regEmail}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2 gap-4">
                     <span className="text-slate-500 font-medium flex items-center gap-1.5"><Landmark className="h-3.5 w-3.5 text-slate-400" /> Maintenance Account:</span>
                     <span className="text-slate-800 font-mono font-bold tracking-wider">{formValues.maintenanceAccountNumber}</span>
                   </div>
@@ -352,6 +355,19 @@ export default function SchoolSetupPage() {
                     <span className="text-slate-500 font-medium flex items-center gap-1.5"><CreditCard className="h-3.5 w-3.5 text-slate-400" /> Salary Account:</span>
                     <span className="text-slate-800 font-mono font-bold tracking-wider">{formValues.salaryAccountNumber}</span>
                   </div>
+                </div>
+                
+                {/* Replay Tour Trigger */}
+                <div className="flex justify-center pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleReplayTour}
+                    className="text-xs font-bold text-slate-650 hover:text-slate-900 border-slate-200 hover:bg-slate-50 cursor-pointer flex items-center gap-1.5 h-10 w-full"
+                  >
+                    <HelpCircle className="h-4 w-4 text-blue-600" />
+                    Replay guided tour of the system
+                  </Button>
                 </div>
               </div>
             )}

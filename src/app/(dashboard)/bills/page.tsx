@@ -23,6 +23,8 @@ interface PageProps {
     endDate?: string;
     page?: string;
     account_type?: string;
+    fromAmount?: string;
+    toAmount?: string;
   }>;
 }
 
@@ -32,6 +34,8 @@ export default async function BillsPage({ searchParams }: PageProps) {
   const status = resolvedSearchParams.status || "all";
   const startDate = resolvedSearchParams.startDate || "";
   const endDate = resolvedSearchParams.endDate || "";
+  const fromAmount = resolvedSearchParams.fromAmount || "";
+  const toAmount = resolvedSearchParams.toAmount || "";
   const page = parseInt(resolvedSearchParams.page || "1", 10);
   const accountType = resolvedSearchParams.account_type || "maintenance";
 
@@ -49,7 +53,7 @@ export default async function BillsPage({ searchParams }: PageProps) {
   // Start building query
   let query = supabase
     .from("dc_bills")
-    .select("id, dc_bill_number, cheque_number, cheque_date, payee_name, amount, status, created_at", {
+    .select("id, dc_bill_number, cheque_number, cheque_date, payee_name, amount, net_payable_amount, status, created_at", {
       count: "exact",
     })
     .eq("school_id", user.id)
@@ -69,6 +73,14 @@ export default async function BillsPage({ searchParams }: PageProps) {
 
   if (endDate) {
     query = query.lte("cheque_date", endDate);
+  }
+
+  if (fromAmount && !isNaN(Number(fromAmount))) {
+    query = query.gte("net_payable_amount", Number(fromAmount));
+  }
+
+  if (toAmount && !isNaN(Number(toAmount))) {
+    query = query.lte("net_payable_amount", Number(toAmount));
   }
 
   // Apply search query
@@ -140,6 +152,8 @@ export default async function BillsPage({ searchParams }: PageProps) {
         initialStatus={status}
         initialStartDate={startDate}
         initialEndDate={endDate}
+        initialFromAmount={fromAmount}
+        initialToAmount={toAmount}
         currentPage={page}
         totalPages={totalPages}
         totalItems={count || 0}

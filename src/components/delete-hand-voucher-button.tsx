@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { deleteHandVoucher } from "@/app/actions/hand-voucher-actions";
-import { logActivity } from "@/app/actions/activity-actions";
 import {
   Dialog,
   DialogContent,
@@ -57,7 +56,6 @@ export function DeleteHandVoucherButton({
     setLoading(true);
     try {
       await deleteHandVoucher(voucherId);
-      await logActivity("edited", normalizedNumber, "Deleted Hand Voucher");
       toast.success("Hand Voucher deleted successfully.");
       setOpen(false);
     } catch (err) {

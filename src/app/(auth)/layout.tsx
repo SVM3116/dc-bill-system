@@ -81,11 +81,6 @@ export default function AuthLayout({
       <footer className="border-t border-slate-200 py-10 px-4 md:px-6 bg-slate-50 text-center text-xs text-slate-500 shrink-0 mt-auto font-sans">
         <div className="max-w-6xl mx-auto w-full flex flex-col items-center gap-5">
           
-          {/* Institutional banner */}
-          <p className="text-slate-800 font-black text-sm tracking-tight text-center max-w-xl leading-relaxed">
-            Karnataka Residential Educational Institutions Society (KREIS)
-          </p>
-
           {/* Credit Block */}
           <p className="text-[11px] font-bold text-slate-500 flex items-center justify-center gap-1">
             <span>Made with</span>
@@ -95,8 +90,6 @@ export default function AuthLayout({
               Manoj Kumar V
             </Link>
           </p>
-
-          <div className="w-16 h-[1px] bg-slate-300 rounded-full" />
 
           {/* Redesigned Contact & Social Icons Row */}
           <div className="flex items-center justify-center gap-3">

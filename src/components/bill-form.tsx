@@ -15,9 +15,9 @@ import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Save, FileCheck, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { convertNumberToWords } from "@/lib/number-to-words";
-import { logActivity } from "@/app/actions/activity-actions";
 import { upsertBill } from "@/app/actions/bill-actions";
 import { getPayees, savePayeeIfNew } from "@/app/actions/payee-actions";
+import { getBillTemplates } from "@/app/actions/bill-template-actions";
 
 // Zod validation schema for full submission
 const itemSchema = z.object({
@@ -112,6 +112,8 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
 
   const [savedPayees, setSavedPayees] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
 
   useEffect(() => {
     const loadPayeeData = async () => {
@@ -122,6 +124,45 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
     };
     loadPayeeData();
   }, []);
+
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        const tpls = await getBillTemplates();
+        setTemplates(tpls.filter((t) => t.account_type === activeAccount));
+      } catch (err) {
+        console.error("Failed to load templates:", err);
+      }
+    };
+    loadTemplates();
+  }, [activeAccount]);
+
+  const handleLoadTemplate = (templateId: string) => {
+    if (!templateId) return;
+    const template = templates.find((t) => t.id === templateId);
+    if (template) {
+      setValue("payee_name", template.payee_name);
+      setValue("payee_address", template.payee_address);
+      
+      const items = (template.items || []).map((item: any) => ({
+        bill_number: item.bill_number || "",
+        bill_date: item.bill_date || "",
+        purpose: item.purpose || "",
+        amount: Number(item.amount) || 0,
+      }));
+      setValue("items", items);
+      
+      const deductions = (template.deductions || []).map((d: any) => ({
+        deduction_type: d.deduction_type,
+        deduction_mode: d.deduction_mode,
+        deduction_value: Number(d.deduction_value) || 0,
+        deduction_amount: Number(d.deduction_amount) || 0,
+      }));
+      setValue("deductions", deductions);
+      
+      toast.success(`Loaded template "${template.name}" successfully.`);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -351,14 +392,6 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
           }
         }
 
-        // Log action in audit table
-        const auditAction = billId ? "edited" : (isDuplicate ? "duplicated" : "generated");
-        await logActivity(
-          auditAction,
-          values.dc_bill_number || "",
-          values.payee_name || ""
-        );
-
         toast.success(isGenerated ? "PDF generated and bill finalized!" : "Draft saved successfully.");
         router.push(isGenerated ? `/bills/${returnedId}` : `/bills?account_type=${activeAccount}`);
       }
@@ -434,6 +467,33 @@ export function BillForm({ billId, initialData, isDuplicate, financialYear = "20
       
       <form onSubmit={handleSubmit(handleGeneratePdf)}>
         <CardContent className="space-y-6 pt-6">
+          {/* Quick Load Template Dropdown */}
+          {templates.length > 0 && (
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <Label className="text-xs font-bold text-slate-700">Quick Fill from Template</Label>
+                <p className="text-[10px] text-slate-500">Load a saved DC Bill template to pre-fill payee details, items, and deductions.</p>
+              </div>
+              <div className="w-full sm:w-[250px]">
+                <select
+                  value={selectedTemplateId}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedTemplateId(val);
+                    handleLoadTemplate(val);
+                  }}
+                  className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-550"
+                >
+                  <option value="">-- Select a template --</option>
+                  {templates.map((tpl) => (
+                    <option key={tpl.id} value={tpl.id}>
+                      {tpl.name} ({(tpl.items as any[])?.length || 0} items)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* General Details & Cheque Details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">

@@ -2,11 +2,13 @@ import React from "react";
 import { BillForm } from "@/components/bill-form";
 import { createClient } from "@/lib/supabase-server";
 import { getSelectedFinancialYear } from "@/lib/financial-year";
+import { getBillTemplateById } from "@/app/actions/bill-template-actions";
 
 interface NewBillPageProps {
   searchParams: Promise<{
     duplicateFrom?: string;
     account_type?: string;
+    templateId?: string;
   }>;
 }
 
@@ -14,9 +16,10 @@ export default async function NewBillPage({ searchParams }: NewBillPageProps) {
   const resolvedSearchParams = await searchParams;
   const duplicateFrom = resolvedSearchParams.duplicateFrom;
   const accountType = resolvedSearchParams.account_type || "maintenance";
+  const templateId = resolvedSearchParams.templateId;
   const financialYear = await getSelectedFinancialYear();
 
-  let duplicateData = null;
+  let initialData = null;
   if (duplicateFrom) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -30,7 +33,7 @@ export default async function NewBillPage({ searchParams }: NewBillPageProps) {
 
       if (data) {
         // Clean up the data for duplication
-        duplicateData = {
+        initialData = {
           cheque_number: data.cheque_number,
           cheque_date: data.cheque_date,
           payee_name: data.payee_name,
@@ -47,6 +50,21 @@ export default async function NewBillPage({ searchParams }: NewBillPageProps) {
         };
       }
     }
+  } else if (templateId) {
+    try {
+      const template = await getBillTemplateById(templateId);
+      if (template) {
+        initialData = {
+          payee_name: template.payee_name,
+          payee_address: template.payee_address,
+          items: template.items || [],
+          account_type: template.account_type,
+          deductions: template.deductions || [],
+        };
+      }
+    } catch (err) {
+      console.error("Failed to load bill template:", err);
+    }
   }
 
   const accountLabel = accountType === "salary" ? "Salary Account" : "Maintenance Account";
@@ -58,7 +76,7 @@ export default async function NewBillPage({ searchParams }: NewBillPageProps) {
         <p className="text-xs text-slate-500">Record a new school expense ledger and prepare the contingent sheet for {accountLabel}</p>
       </div>
       <BillForm 
-        initialData={duplicateData} 
+        initialData={initialData} 
         isDuplicate={!!duplicateFrom} 
         financialYear={financialYear} 
         accountType={accountType as "maintenance" | "salary"} 
@@ -66,4 +84,5 @@ export default async function NewBillPage({ searchParams }: NewBillPageProps) {
     </div>
   );
 }
+
 

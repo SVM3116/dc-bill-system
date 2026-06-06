@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit, Download, Printer, AlertTriangle, Calendar, FileText, Landmark, User, Copy, ExternalLink } from "lucide-react";
+import { SaveTemplateButton } from "@/components/save-template-button";
 
 interface BillDetailsPageProps {
   params: Promise<{
@@ -68,6 +69,7 @@ export default async function BillDetailsPage({ params }: BillDetailsPageProps) 
         </div>
         
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
+          <SaveTemplateButton id={bill.id} type="bill" className="flex-1 md:flex-none" />
           <Link href={`/bills/new?duplicateFrom=${bill.id}`} className="flex-1 md:flex-none">
             <Button variant="outline" className="w-full border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 h-11 md:h-10">
               <Copy className="h-4 w-4" />

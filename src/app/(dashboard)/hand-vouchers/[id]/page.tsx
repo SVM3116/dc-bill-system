@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit, Download, Printer, Calendar, FileText, Landmark, User, Copy, ExternalLink, Columns } from "lucide-react";
+import { SaveTemplateButton } from "@/components/save-template-button";
 
 interface HandVoucherDetailsPageProps {
   params: Promise<{
@@ -116,6 +117,7 @@ export default async function HandVoucherDetailsPage({ params }: HandVoucherDeta
         </div>
 
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
+          <SaveTemplateButton id={voucher.id} type="voucher" className="flex-1 md:flex-none" />
           <Link href={`/hand-vouchers/new?duplicateFrom=${voucher.id}`} className="flex-1 md:flex-none">
             <Button variant="outline" className="w-full border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 h-11 md:h-10 cursor-pointer">
               <Copy className="h-4 w-4" />

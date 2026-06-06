@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm, useFieldArray, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Save, FileCheck, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { upsertHandVoucher, getNextVoucherNumber } from "@/app/actions/hand-voucher-actions";
-import { logActivity } from "@/app/actions/activity-actions";
+import { getVoucherTemplates } from "@/app/actions/voucher-template-actions";
 
 // Format date helper (e.g. 2026-06-02 -> 02-06-2026)
 function formatDate(dateStr: string | null | undefined): string {
@@ -102,6 +102,8 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [autoVoucherNum, setAutoVoucherNum] = useState<string>("Loading...");
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
 
   useEffect(() => {
     setMounted(true);
@@ -162,7 +164,52 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
   const watchedMainContent = watch("main_content");
   const watchedCertContent = watch("certification_content");
   const watchedLayout = watch("table_layout");
-  const watchedItems = watch("items") || [];
+  const watchedItems = useWatch({
+    control,
+    name: "items",
+  }) || [];
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const tpls = await getVoucherTemplates(watchedLayout);
+        setTemplates(tpls);
+        setSelectedTemplateId("");
+      } catch (err) {
+        console.error("Failed to load templates:", err);
+      }
+    };
+    fetchTemplates();
+  }, [watchedLayout]);
+
+
+
+  const handleLoadTemplate = (templateId: string) => {
+    if (!templateId) return;
+    const template = templates.find((t) => t.id === templateId);
+    if (template) {
+      setValue("main_content", template.main_content);
+      setValue("certification_content", template.certification_content);
+      setValue("payment_mode", template.payment_mode);
+      
+      const items = (template.items || []).map((item: any) => ({
+        sl_no: item.sl_no,
+        description: item.description || "",
+        subject: item.subject || "",
+        month: item.month || "",
+        days: item.days || "",
+        date: item.date || "",
+        quantity_kg: item.quantity_kg !== null && item.quantity_kg !== undefined ? Number(item.quantity_kg) : "",
+        quantity: item.quantity || "",
+        rate: item.rate || "",
+        amount: item.amount !== null && item.amount !== undefined ? Number(item.amount) : 0,
+        remarks: item.remarks || "",
+      }));
+      setValue("items", items);
+      
+      toast.success(`Loaded template "${template.name}" successfully.`);
+    }
+  };
 
   // Dynamic calculation helper for quantities and rates
   const handleAmountCalc = (index: number, updatedField?: "quantity" | "quantity_kg" | "rate", updatedValue?: any) => {
@@ -320,6 +367,8 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
   const onSubmit = async (values: HandVoucherFormValues) => {
     setLoading(true);
     try {
+
+
       const payload = {
         voucher_date: values.voucher_date,
         payment_mode: values.payment_mode,
@@ -339,13 +388,6 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
 
       if (result.success) {
         toast.success(voucherId && !isDuplicate ? "Hand Voucher updated successfully!" : "Hand Voucher created successfully!");
-        
-        await logActivity(
-          voucherId && !isDuplicate ? "edited" : "generated",
-          autoVoucherNum,
-          values.main_content.substring(0, 40)
-        );
-
         router.push(`/hand-vouchers/${result.id}`);
       }
     } catch (err: any) {
@@ -471,6 +513,34 @@ export function HandVoucherForm({ voucherId, initialData, isDuplicate }: HandVou
           </div>
         </div>
       </div>
+
+      {/* Quick Load Template Dropdown */}
+      {templates.length > 0 && (
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+          <div>
+            <Label className="text-xs font-bold text-slate-700">Quick Fill from Template</Label>
+            <p className="text-[10px] text-slate-500">Load a saved Hand Voucher template to pre-fill content, payment mode, and items.</p>
+          </div>
+          <div className="w-full sm:w-[250px]">
+            <select
+              value={selectedTemplateId}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedTemplateId(val);
+                handleLoadTemplate(val);
+              }}
+              className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-550"
+            >
+              <option value="">-- Select a template --</option>
+              {templates.map((tpl) => (
+                <option key={tpl.id} value={tpl.id}>
+                  {tpl.name} ({(tpl.items as any[])?.length || 0} items)
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         

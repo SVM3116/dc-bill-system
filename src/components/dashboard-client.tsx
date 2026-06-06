@@ -18,6 +18,7 @@ import {
   ShieldAlert,
   ChevronRight
 } from "lucide-react";
+import { useDashboardTour } from "@/hooks/useTour";
 
 
 interface BillItem {
@@ -60,6 +61,9 @@ export function DashboardClient({
   financialYear,
 }: DashboardClientProps) {
   const router = useRouter();
+
+  // Run guided onboarding tour on first-time load
+  useDashboardTour();
 
   // Set default month to current calendar month (1-indexed: 1 = Jan, 12 = Dec)
   const currentMonthNum = useMemo(() => {
