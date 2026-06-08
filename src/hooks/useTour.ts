@@ -15,7 +15,7 @@ export function useDashboardTour() {
       steps: [
         {
           popover: {
-            title: "Welcome to KREIS Platform!",
+            title: "Welcome to KREIS DC BILL Platform!",
             description: "Let's take a quick 1-minute tour to help you get familiar with the system features.",
           }
         },

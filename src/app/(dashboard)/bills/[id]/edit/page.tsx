@@ -50,7 +50,7 @@ export default async function EditBillPage({ params }: EditBillPageProps) {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-slate-800">Edit {accountLabel} DC Bill</h2>
-        <p className="text-xs text-slate-500">Modify stored variables for this {accountLabel} contingency statement</p>
+        <p className="text-xs text-slate-500">Modify stored variables for this {accountLabel} DC Bill</p>
       </div>
       <BillForm 
         billId={id} 

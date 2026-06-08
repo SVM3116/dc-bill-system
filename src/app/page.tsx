@@ -209,10 +209,10 @@ export default function Home() {
     
     const steps = [
       { progress: 25, text: "Compiling Maintenance & Salary DC Bills..." },
-      { progress: 50, text: "Rendering Nudi-font Kannada templates..." },
-      { progress: 75, text: "Packing PDFs into zip container using JSZip..." },
-      { progress: 95, text: "Generating client-side download stream..." },
-      { progress: 100, text: "ZIP archive successfully downloaded!" }
+      { progress: 50, text: "Rendering Kannada school templates..." },
+      { progress: 75, text: "Compiling monthly reports folder..." },
+      { progress: 95, text: "Generating PDF download stream..." },
+      { progress: 100, text: "Monthly reports downloaded successfully!" }
     ];
 
     steps.forEach((step, index) => {
@@ -856,21 +856,21 @@ export default function Home() {
 
                     {/* Simulated ZIP downloader widget */}
                     <div className="pt-4 border-t border-slate-200 text-left">
-                      <p className="text-[9px] font-black text-slate-400 tracking-wider uppercase mb-2">ZIP Archive packager</p>
+                      <p className="text-[9px] font-black text-slate-400 tracking-wider uppercase mb-2">Monthly Reports Download</p>
                       {zippingState === "idle" ? (
                         <button
                           onClick={triggerSimulatedZip}
                           className="w-full inline-flex items-center justify-center gap-1.5 bg-slate-950 hover:bg-slate-800 text-white font-black text-xs py-2 px-3 rounded-lg shadow-md transition-all cursor-pointer border border-slate-800"
                         >
                           <FileArchive className="h-3.5 w-3.5 text-indigo-400 animate-pulse" />
-                          Simulate Bulk ZIP Download
+                          Simulate Monthly Reports Download
                         </button>
                       ) : zippingState === "zipping" ? (
                         <div className="bg-slate-50 border border-slate-300 rounded-lg p-3 space-y-2 animate-pulse">
                           <div className="flex justify-between items-center text-[10px] font-bold text-slate-700">
                             <span className="flex items-center gap-1.5">
                               <Loader2 className="h-3 w-3 text-indigo-600 animate-spin" />
-                              Zipping files...
+                              Compiling reports...
                             </span>
                             <span>{zipProgress}%</span>
                           </div>
@@ -885,7 +885,7 @@ export default function Home() {
                       ) : (
                         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-center flex items-center justify-center gap-1.5 text-emerald-800 text-xs font-black">
                           <Check className="h-4 w-4 shrink-0 text-emerald-600 font-black" />
-                          Simulated ZIP Packaged &amp; Saved!
+                          Reports Downloaded Successfully!
                         </div>
                       )}
                     </div>
@@ -1210,7 +1210,7 @@ export default function Home() {
 
                             {/* Header */}
                             <div className="border-b border-black pb-1 mb-2 text-left">
-                              <h4 className="font-black text-[9px] text-black">Cheque Issue Register ({financialYear})</h4>
+                              <h4 className="font-black text-[9px] text-black">Cheque Register ({financialYear})</h4>
                               <p className="text-[6.5px] text-slate-500 font-semibold">
                                 Filter: {regAccountType === "all" ? "All Accounts" : regAccountType === "maintenance" ? "Maintenance" : "Salary"} | Dates: {formatDateForPreview(regFromDate)} to {formatDateForPreview(regToDate)}
                               </p>
@@ -1321,7 +1321,7 @@ export default function Home() {
 
                 {/* Row 2: Cheque register */}
                 <tr>
-                  <td className="p-4 font-black text-slate-800">Cheque Issue Register</td>
+                  <td className="p-4 font-black text-slate-800">Cheque Register</td>
                   <td className="p-4 border-l border-slate-200 bg-rose-50/5">
                     <div className="flex items-start gap-2">
                       <X className="h-4.5 w-4.5 text-rose-600 bg-rose-100 rounded-full p-0.5 shrink-0 mt-0.5" />
@@ -1372,24 +1372,24 @@ export default function Home() {
 
                 {/* Row 5: Bulk operations */}
                 <tr>
-                  <td className="p-4 font-black text-slate-800">Bulk Document Zipping</td>
+                  <td className="p-4 font-black text-slate-800">Monthly Reports Compilation</td>
                   <td className="p-4 border-l border-slate-200 bg-rose-50/5">
                     <div className="flex items-start gap-2">
                       <X className="h-4.5 w-4.5 text-rose-600 bg-rose-100 rounded-full p-0.5 shrink-0 mt-0.5" />
-                      <span>Office staff manually locate file paths, rename individual sheets, and compile them into WinZip folders.</span>
+                      <span>Office staff manually locate, rename, and compile monthly bills and registers into folders.</span>
                     </div>
                   </td>
                   <td className="p-4 border-l border-slate-200 bg-indigo-50/5 text-slate-800">
                     <div className="flex items-start gap-2">
                       <Check className="h-4.5 w-4.5 text-emerald-600 bg-emerald-100 rounded-full p-0.5 shrink-0 mt-0.5" />
-                      <span>Integrated JSZip packages all compiled documents matching date filters automatically with a live status bar.</span>
+                      <span>Automatically bundle and download all monthly reports and bills for any date range with one click.</span>
                     </div>
                   </td>
                 </tr>
 
                 {/* Row 6: Security and access */}
                 <tr>
-                  <td className="p-4 font-black text-slate-800">Data Safety &amp; Access Control</td>
+                  <td className="p-4 font-black text-slate-800">School-wise Secure Data</td>
                   <td className="p-4 border-l border-slate-200 bg-rose-50/5">
                     <div className="flex items-start gap-2">
                       <X className="h-4.5 w-4.5 text-rose-600 bg-rose-100 rounded-full p-0.5 shrink-0 mt-0.5" />
@@ -1399,7 +1399,7 @@ export default function Home() {
                   <td className="p-4 border-l border-slate-200 bg-indigo-50/5 text-slate-800">
                     <div className="flex items-start gap-2">
                       <Check className="h-4.5 w-4.5 text-emerald-600 bg-emerald-100 rounded-full p-0.5 shrink-0 mt-0.5" />
-                      <span>Protected cloud storage with Supabase Row-Level Security (RLS) ensuring strict multi-tenant school isolation.</span>
+                      <span>Secure cloud storage with school-wise data protection to keep your school's records separate and safe.</span>
                     </div>
                   </td>
                 </tr>
@@ -1418,7 +1418,7 @@ export default function Home() {
               kreis: "Automatic sequential numbering ('01/2026-27') calculated dynamically and locked per institution."
             },
             {
-              area: "Cheque Issue Register",
+              area: "Cheque Register",
               traditional: "Office typist manually transcribes cheque numbers, dates, payees, and particulars line-by-line. High copy errors.",
               kreis: "Zero data-entry. The system compiles register ledgers instantly directly from saved DC Bills and Hand Vouchers."
             },
@@ -1433,14 +1433,14 @@ export default function Home() {
               kreis: "System font canvas translates Unicode characters directly into flawless, Nudi-compliant printed vector A4 PDFs."
             },
             {
-              area: "Bulk Document Zipping",
-              traditional: "Office staff manually locate file paths, rename individual sheets, and compile them into WinZip folders.",
-              kreis: "Integrated JSZip packages all compiled documents matching date filters automatically with a live status bar."
+              area: "Monthly Reports Compilation",
+              traditional: "Office staff manually locate, rename, and compile monthly bills and registers into folders.",
+              kreis: "Automatically bundle and download all monthly reports and bills for any date range with one click."
             },
             {
-              area: "Data Safety & Access Control",
+              area: "School-wise Secure Data",
               traditional: "Excel spreadsheets saved locally. Vulnerable to accidental deletions, file corruption, or unauthorized eyes.",
-              kreis: "Protected cloud storage with Supabase Row-Level Security (RLS) ensuring strict multi-tenant school isolation."
+              kreis: "Secure cloud storage with school-wise data protection to keep your school's records separate and safe."
             }
           ].map((item, idx) => (
             <div key={idx} className="bg-white border border-slate-300 rounded-xl p-4 shadow-sm space-y-3">
@@ -1486,7 +1486,7 @@ export default function Home() {
             <div className="bg-indigo-55 text-indigo-700 w-10 h-10 rounded-xl flex items-center justify-center border border-indigo-200">
               <FileText className="h-5 w-5" />
             </div>
-            <h4 className="font-extrabold text-slate-900 text-sm">Contingency (DC) Bills</h4>
+            <h4 className="font-extrabold text-slate-900 text-sm">Automatic DC Bills</h4>
             <p className="text-[11px] text-slate-600 leading-relaxed font-semibold">
               Create Maintenance &amp; Salary DC Bills with automatic school-scoped sequential numbering (`01/2026-27`) and unique 6-digit cheque logging.
             </p>
@@ -1498,7 +1498,7 @@ export default function Home() {
             <div className="bg-emerald-50 text-emerald-700 w-10 h-10 rounded-xl flex items-center justify-center border border-emerald-200">
               <CalendarDays className="h-5 w-5" />
             </div>
-            <h4 className="font-extrabold text-slate-900 text-sm">Dynamic Hand Vouchers</h4>
+            <h4 className="font-extrabold text-slate-900 text-sm">Hand Voucher Generator</h4>
             <p className="text-[11px] text-slate-600 leading-relaxed font-semibold">
               Separate module supporting 4 layouts: Guest Teacher, Milling, Labor, and Gas. Computes `quantity * rate` dynamically with zero mobile horizontal drag.
             </p>
@@ -1510,7 +1510,7 @@ export default function Home() {
             <div className="bg-blue-50 text-blue-700 w-10 h-10 rounded-xl flex items-center justify-center border border-blue-200">
               <FileSpreadsheet className="h-5 w-5" />
             </div>
-            <h4 className="font-extrabold text-slate-900 text-sm">Cheque Issue Register</h4>
+            <h4 className="font-extrabold text-slate-900 text-sm">Cheque Register</h4>
             <p className="text-[11px] text-slate-600 leading-relaxed font-semibold">
               Auto-compiles details serial-wise directly from created DC Bills. Supports custom date-range filters, landscape A4 PDF printing, and Excel sheets.
             </p>
@@ -1534,33 +1534,33 @@ export default function Home() {
             <div className="bg-amber-50 text-amber-700 w-10 h-10 rounded-xl flex items-center justify-center border border-amber-200">
               <Download className="h-5 w-5" />
             </div>
-            <h4 className="font-extrabold text-slate-900 text-sm">Bulk ZIP Packager</h4>
-            <p className="text-[11px] text-slate-650 leading-relaxed font-semibold">
-              Export generated documents in date ranges. Compiles PDFs sequentially inside a client-side ZIP container with a progressive status bar.
+            <h4 className="font-extrabold text-slate-900 text-sm">Monthly Reports</h4>
+            <p className="text-[11px] text-slate-655 leading-relaxed font-semibold">
+              Download and bundle all monthly DC bills, hand vouchers, and cheque register logs for any selected month or date range at once.
             </p>
           </div>
 
-          {/* Card 6: Multi-Tenant Isolation */}
+          {/* Card 6: School-wise Secure Data */}
           <div className="bg-white border border-slate-300 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 space-y-4 text-left relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-20 h-20 bg-cyan-500/5 rounded-bl-full pointer-events-none group-hover:bg-cyan-500/10 transition-colors" />
             <div className="bg-cyan-50 text-cyan-700 w-10 h-10 rounded-xl flex items-center justify-center border border-cyan-200">
               <ShieldCheck className="h-5 w-5" />
             </div>
-            <h4 className="font-extrabold text-slate-900 text-sm">Multi-Tenant Isolation</h4>
-            <p className="text-[11px] text-slate-650 leading-relaxed font-semibold">
-              Institutional security driven by Supabase Row-Level Security (RLS). Ensures schools only read, update, or delete their own bills and configs.
+            <h4 className="font-extrabold text-slate-900 text-sm">School-wise Secure Data</h4>
+            <p className="text-[11px] text-slate-655 leading-relaxed font-semibold">
+              Your school's data is kept fully secure and private. Each school can only view, create, and print its own bills and vouchers.
             </p>
           </div>
 
-          {/* Card 7: PDF Watermarks */}
+          {/* Card 7: PDF Download */}
           <div className="bg-white border border-slate-300 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 space-y-4 text-left relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-20 h-20 bg-rose-500/5 rounded-bl-full pointer-events-none group-hover:bg-rose-500/10 transition-colors" />
             <div className="bg-rose-50 text-rose-700 w-10 h-10 rounded-xl flex items-center justify-center border border-rose-200">
               <Sparkles className="h-5 w-5" />
             </div>
-            <h4 className="font-extrabold text-slate-900 text-sm">Audit Watermarks</h4>
-            <p className="text-[11px] text-slate-650 leading-relaxed font-semibold">
-              Automatically embeds timezone-independent audit stamps on all print pages, displaying compiled document IDs and creation dates.
+            <h4 className="font-extrabold text-slate-900 text-sm">PDF Download</h4>
+            <p className="text-[11px] text-slate-655 leading-relaxed font-semibold">
+              Instantly download and print clean, official A4 PDF formats of DC Bills, Hand Vouchers, and Cheque Registers.
             </p>
           </div>
 
@@ -1599,9 +1599,9 @@ export default function Home() {
                 <LockKeyhole className="h-5 w-5 text-white" />
                 <span className="absolute -top-1 -right-1 bg-slate-900 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border border-white">1</span>
               </div>
-              <h5 className="font-extrabold text-slate-900 text-sm">Secure Authentication</h5>
+              <h5 className="font-extrabold text-slate-900 text-sm">School-wise Secure Data</h5>
               <p className="text-[11px] text-slate-600 leading-relaxed font-semibold">
-                Staff log in via secure credentials. Segregated multi-school environment isolation is enforced.
+                Staff log in via secure credentials. Each school's data is private and kept separate.
               </p>
             </div>
 
@@ -1635,9 +1635,9 @@ export default function Home() {
                 <Download className="h-5 w-5 text-white" />
                 <span className="absolute -top-1 -right-1 bg-slate-900 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border border-white">4</span>
               </div>
-              <h5 className="font-extrabold text-slate-900 text-sm">Vector PDF Printout</h5>
+              <h5 className="font-extrabold text-slate-900 text-sm">PDF Download &amp; Print</h5>
               <p className="text-[11px] text-slate-600 leading-relaxed font-semibold">
-                Download formatted document with vector font maps, sign, check the auto-compiled register log, and archive.
+                Directly download print-ready portrait DC Bills, landscape Cheque registers, or monthly report packages.
               </p>
             </div>
           </div>

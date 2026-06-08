@@ -12,7 +12,7 @@ export const translations = {
     logout: "Logout",
 
     // Hero
-    saasSubtitle: "SaaS Multi-School Platform",
+    saasSubtitle: "School-wise Secure Data Platform",
     heroTitle: "Automate KREIS",
     heroTitleSpan: "DC Bills & Vouchers",
     heroDescription: "Redesigned workflow tailored for Morarji Desai Residential Schools. Input data seamlessly, configure dynamic deduction rates, auto-generate landscape Cheque Registers on-the-fly, and print compliant A4 documents.",
@@ -65,10 +65,10 @@ export const translations = {
     fromDate: "From Date",
     toDate: "To Date",
     resetFilters: "Reset Filters",
-    zipArchivePackager: "ZIP Archive packager",
-    simulateZip: "Simulate Bulk ZIP Download",
-    zippingFiles: "Zipping files...",
-    zipSuccess: "ZIP archive successfully downloaded!",
+    zipArchivePackager: "Monthly Reports Download",
+    simulateZip: "Simulate Monthly Reports Download",
+    zippingFiles: "Compiling reports...",
+    zipSuccess: "Monthly reports successfully downloaded!",
     a4PortraitPdf: "A4 Portrait PDF",
     govtKn: "Government of Karnataka",
     kreisSocietyKn: "Karnataka Residential Educational Institutions Society, Bengaluru",
@@ -95,7 +95,7 @@ export const translations = {
     receivedSig: "Receiver Signature",
     accountantSig: "Accountant Signature",
     landscapeChequeRegister: "Cheque Register Landscape",
-    chequeRegisterTitle: "Cheque Issue Register",
+    chequeRegisterTitle: "Cheque Register",
     pageDetails: "Page 1 of 1",
 
     // Comparison Guide
@@ -109,14 +109,14 @@ export const translations = {
     // Steps
     procedureSubtitle: "Workflow Stepper",
     procedureTitle: "Administrative Procedure",
-    step1Title: "Secure Authentication",
-    step1Desc: "Sign in with school credentials tied to Supabase Row-Level Security (RLS) to ensure absolute multi-tenant isolation.",
+    step1Title: "School-wise Secure Data",
+    step1Desc: "Sign in with secure school credentials to access your separate school-wise data and records.",
     step2Title: "Configuration Profile",
     step2Desc: "Set up bank accounts, institutional names in Kannada (Nudi), and audit signature configurations via the onboarding wizard.",
     step3Title: "Create Bill / Voucher",
     step3Desc: "Input sub-bills or log monthly guest teacher days. The system automatically computes deductions and logs cheques sequentially.",
-    step4Title: "Vector PDF Printout",
-    step4Desc: "Directly download print-ready portrait DC Bills, landscape Cheque registers, or bulk ZIP containers complete with security stamps.",
+    step4Title: "PDF Download & Print",
+    step4Desc: "Directly download print-ready portrait DC Bills, landscape Cheque registers, or monthly report packages.",
 
     // Developer Card
     developerInfo: "Developer Info",
@@ -136,7 +136,7 @@ export const translations = {
     logout: "ನಿರ್ಗಮಿಸಿ",
 
     // Hero
-    saasSubtitle: "ಬಹು-ವಸತಿ ಶಾಲೆಗಳ ತಂತ್ರಾಂಶ",
+    saasSubtitle: "ಪ್ರತಿ ಶಾಲೆಯ ಸುರಕ್ಷಿತ ದಾಖಲೆಗಳ ವೇದಿಕೆ",
     heroTitle: "ಕೆ.ಆರ್.ಇ.ಐ.ಎಸ್ ಸ್ವಯಂಚಾಲಿತ",
     heroTitleSpan: "ಡಿ.ಸಿ ಬಿಲ್ ಮತ್ತು ರಶೀದಿಗಳು",
     heroDescription: "ಮೊರಾರ್ಜಿ ದೇಸಾಯಿ ವಸತಿ ಶಾಲೆಗಳಿಗಾಗಿಯೇ ವಿನ್ಯಾಸಗೊಳಿಸಲಾದ ಸುಲಭ ಕಾರ್ಯವೈಖರಿ. ಡೇಟಾವನ್ನು ನಮೂದಿಸಿ, ತೆರಿಗೆ ಕಡಿತ ಲೆಕ್ಕಹಾಕಿ, ಚೆಕ್ ರಿಜಿಸ್ಟರ್ ಸಿದ್ಧಪಡಿಸಿ ಮತ್ತು ಮುದ್ರಣಕ್ಕೆ ಯೋಗ್ಯವಾದ A4 ದಾಖಲೆಗಳನ್ನು ಪಡೆದುಕೊಳ್ಳಿ.",
@@ -189,10 +189,10 @@ export const translations = {
     fromDate: "ಪ್ರಾರಂಭ ದಿನಾಂಕ",
     toDate: "ಕೊನೆಯ ದಿನಾಂಕ",
     resetFilters: "ಫಿಲ್ಟರ್ ತೆರವುಗೊಳಿಸಿ",
-    zipArchivePackager: "ZIP ಆರ್ಕೈವ್ ಪ್ಯಾಕೇಜರ್",
-    simulateZip: "ZIP ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
-    zippingFiles: "ಜಿಪ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
-    zipSuccess: "ZIP ಡೌನ್‌ಲೋಡ್ ಯಶಸ್ವಿಯಾಗಿದೆ!",
+    zipArchivePackager: "ಮಾಸಿಕ ವರದಿಗಳ ಡೌನ್‌ಲೋಡ್",
+    simulateZip: "ಮಾಸಿಕ ವರದಿಗಳ ಡೌನ್‌ಲೋಡ್ ಅನ್ನು ಸಿಮ್ಯುಲೇಟ್ ಮಾಡಿ",
+    zippingFiles: "ವರದಿಗಳನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...",
+    zipSuccess: "ಮಾಸಿಕ ವರದಿಗಳು ಯಶಸ್ವಿಯಾಗಿ ಡೌನ್‌ಲೋಡ್ ಆಗಿವೆ!",
     a4PortraitPdf: "A4 ಭಾವಚಿತ್ರ PDF",
     govtKn: "ಕರ್ನಾಟಕ ಸರ್ಕಾರ",
     kreisSocietyKn: "ಕರ್ನಾಟಕ ವಸತಿ ಶಿಕ್ಷಣ ಸಂಸ್ಥೆಗಳ ಸಂಘ, ಬೆಂಗಳೂರು",
@@ -219,7 +219,7 @@ export const translations = {
     receivedSig: "ಸ್ವೀಕೃತದಾರರ ಸಹಿ",
     accountantSig: "ಲೆಕ್ಕಿಗರ ಸಹಿ",
     landscapeChequeRegister: "ಚೆಕ್ ರಿಜಿಸ್ಟರ್ ಲ್ಯಾಂಡ್‌ಸ್ಕೇಪ್",
-    chequeRegisterTitle: "ಚೆಕ್ ವಿತರಣಾ ರಿಜಿಸ್ಟರ್",
+    chequeRegisterTitle: "ಚೆಕ್ ರಿಜಿಸ್ಟರ್",
     pageDetails: "ಪುಟ ೧ ರ ೧",
 
     // Comparison Guide
@@ -233,14 +233,14 @@ export const translations = {
     // Steps
     procedureSubtitle: "ಕಾರ್ಯ ಹಂತಗಳು",
     procedureTitle: "ಆಡಳಿತಾತ್ಮಕ ಪ್ರಕ್ರಿಯೆ",
-    step1Title: "ಸುರಕ್ಷಿತ ಲಾಗಿನ್",
-    step1Desc: "ಶಾಲೆಯ ಪ್ರತ್ಯೇಕ ರುಜುವಾತುಗಳೊಂದಿಗೆ ಸೈನ್ ಇನ್ ಮಾಡಿ. ಸುಪಬೇಸ್ RLS ಮೂಲಕ ನಿಮ್ಮ ಶಾಲೆಯ ಡೇಟಾ ಸಂಪೂರ್ಣ ಸುರಕ್ಷಿತವಾಗಿರುತ್ತದೆ.",
+    step1Title: "ಶಾಲಾವಾರು ಸುರಕ್ಷಿತ ಡೇಟಾ",
+    step1Desc: "ನಿಮ್ಮ ಶಾಲೆಯ ಪ್ರತ್ಯೇಕ ಸುರಕ್ಷಿತ ರುಜುವಾತುಗಳೊಂದಿಗೆ ಸೈನ್ ಇನ್ ಮಾಡಿ. ಶಾಲೆಯ ಡೇಟಾ ಸಂಪೂರ್ಣ ಸುರಕ್ಷಿತವಾಗಿರುತ್ತದೆ.",
     step2Title: "ಶಾಲೆಯ ಪ್ರೊಫೈಲ್ ಕಾನ್ಫಿಗರೇಶನ್",
     step2Desc: "ಮೊದಲ ಬಾರಿ ಲಾಗಿನ್ ಆದಾಗ ಕನ್ನಡದಲ್ಲಿ ಶಾಲೆಯ ಹೆಸರು, ವಿಳಾಸ, ಬ್ಯಾಂಕ್ ಖಾತೆಗಳು ಮತ್ತು ಸಹಿಯ ಮಾದರಿಯನ್ನು ಹೊಂದಿಸಿ.",
     step3Title: "ಬಿಲ್ ಅಥವಾ ರಶೀದಿ ರಚನೆ",
     step3Desc: "ಉಪ-ಬಿಲ್‌ಗಳನ್ನು ಅಥವಾ ಗೌರವ ಧನ ದಿನಗಳನ್ನು ನಮೂದಿಸಿ. ಸಿಸ್ಟಮ್ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ತೆರಿಗೆ ಕಡಿತವನ್ನು ಲೆಕ್ಕಹಾಕಿ ಉಳಿಸುತ್ತದೆ.",
     step4Title: "ಪಿಡಿಎಫ್ ಡೌನ್‌ಲೋಡ್ ಮತ್ತು ಪ್ರಿಂಟ್",
-    step4Desc: "ಮುದ್ರಣಕ್ಕೆ ಸಿದ್ಧವಿರುವ ಡಿ.ಸಿ. ಬಿಲ್, ಚೆಕ್ ರಿಜಿಸ್ಟರ್ ಅಥವಾ ಇಡೀ ವರ್ಷದ ದಾಖಲೆಗಳನ್ನು ಒಂದೇ ಜಿಪ್ ಫೈಲ್‌ನಲ್ಲಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ.",
+    step4Desc: "ಮುದ್ರಣಕ್ಕೆ ಸಿದ್ಧವಿರುವ ಡಿ.ಸಿ. ಬಿಲ್, ಚೆಕ್ ರಿಜಿಸ್ಟರ್ ಅಥವಾ ಮಾಸಿಕ ವರದಿಗಳನ್ನು ಸುಲಭವಾಗಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ.",
 
     // Developer Card
     developerInfo: "ಡೆವಲಪರ್ ಮಾಹಿತಿ",

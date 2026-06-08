@@ -50,7 +50,7 @@ self.onmessage = async function (e) {
       }
     }
 
-    self.postMessage({ type: "progress", percent: 95, statusText: "Generating ZIP archive..." });
+    self.postMessage({ type: "progress", percent: 95, statusText: "Compiling reports package..." });
 
     const zipContent = await zip.generateAsync({ type: "blob" });
 
@@ -58,6 +58,6 @@ self.onmessage = async function (e) {
     self.postMessage({ type: "success", blob: zipContent });
 
   } catch (err) {
-    self.postMessage({ type: "error", error: err.message || "Unknown error during ZIP generation" });
+    self.postMessage({ type: "error", error: err.message || "Unknown error during report compilation" });
   }
 };

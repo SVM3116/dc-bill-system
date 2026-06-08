@@ -113,7 +113,7 @@ export function BulkDownloadDialog() {
         render={
           <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 h-10 sm:h-9">
             <Download className="h-4 w-4" />
-            Download Documents
+            Monthly Reports
           </Button>
         }
       />
@@ -122,10 +122,10 @@ export function BulkDownloadDialog() {
         <DialogHeader className="space-y-1">
           <DialogTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
             <Archive className="h-5 w-5 text-blue-700" />
-            Bulk Download Documents
+            Download Monthly Reports
           </DialogTitle>
           <p className="text-xs text-slate-500">
-            Generate and package DC Bills & Hand Voucher PDFs into a single ZIP archive.
+            Generate and download monthly DC Bills and Hand Voucher PDFs.
           </p>
         </DialogHeader>
 
@@ -205,9 +205,9 @@ export function BulkDownloadDialog() {
                 onChange={(e) => setDownloadType(e.target.value as any)}
                 className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 px-3 py-2 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[38px]"
               >
-                <option value="combined">Combined ZIP (DC Bills & Hand Vouchers)</option>
-                <option value="dc_bills">DC Bills ZIP Only</option>
-                <option value="hand_vouchers">Hand Vouchers ZIP Only</option>
+                <option value="combined">Combined (DC Bills & Hand Vouchers)</option>
+                <option value="dc_bills">DC Bills Only</option>
+                <option value="hand_vouchers">Hand Vouchers Only</option>
               </select>
             </div>
 
@@ -226,7 +226,7 @@ export function BulkDownloadDialog() {
                 className="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs h-9"
               >
                 <Download className="h-4 w-4 mr-1.5" />
-                Generate & ZIP
+                Download Reports
               </Button>
             </div>
           </form>
